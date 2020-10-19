@@ -1,0 +1,17 @@
+[Unit]
+Description=sgx-app-verifier
+
+[Service]
+Type=simple
+User=sgx-app-verifier
+Group=sgx-app-verifier
+ExecStart=/usr/bin/sgx-app-verifier run
+ExecReload=/bin/kill -s HUP $MAINPID
+TimeoutStartSec=0
+Restart=on-failure
+PermissionsStartOnly=true
+RuntimeDirectory=sgx-app-verifier
+RuntimeDirectoryMode=0775
+
+[Install]
+WantedBy=multi-user.target
