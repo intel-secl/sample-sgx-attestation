@@ -73,3 +73,39 @@ const (
 const (
 	JWTCertsCacheTime = "1m"
 )
+
+//Protocol
+const (
+	ProtocolTcp string = "tcp"
+)
+
+//Protocol type
+const (
+	ReqTypeConnect               uint8  = 1
+	ReqTypePubkeyWrappedSWK      uint8  = 2
+	ReqTypeSWKWrappedSecret      uint8  = 3
+)
+
+//Param type
+const (
+	ParamTypeUsername            uint8  = 1
+	ParamTypePassword            uint8  = 2
+	ParamTypePubkeyWrappedSwk    uint8  = 3
+	ParamTypeSwkWrappedSecret    uint8  = 4
+)
+
+//Response code
+const (
+	ResponseCodeSuccess          uint8  = 1
+	ResponseCodeFailure          uint8  = 2
+)
+
+//Response Element
+const (
+	ResponseElementTypeSGXQuote      uint8 = 1
+	ResponseElementTypeEnclavePubKey uint8 = 2
+)
+
+const (
+	StopCharacter = "\r\n\r\n"
+)

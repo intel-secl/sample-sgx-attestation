@@ -8,9 +8,12 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/intel-secl/sample-sgx-attestation/v3/controllers"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -42,9 +45,10 @@ func (a *App) startServer() error {
 		return err
 	}
 
-	// Initialize Host trust manager
-//	go hostTrustManager.ProcessQueue()
-
+	caCertController := controllers.AppVerifierController{
+		Address: strings.Join([]string{"127.0.0.1", strconv.Itoa(999)}, ":"),
+	}
+	go caCertController.VerifyTenantAndShareSecret()
 
 	// Initialize routes
 	routes := router.InitRoutes(c)
