@@ -43,6 +43,7 @@ const (
 	DefaultAppTlsSan                   = "127.0.0.1,localhost"
 	DefaultKeyAlgorithm                = "rsa"
 	DefaultKeyLength                   = 3072
+	DefaultSecretLength                = 8
 	DefaultSelfSignedCertValidityYears = 1
 )
 

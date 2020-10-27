@@ -127,7 +127,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		}
 
 		log.Printf("Generating new secret")
-		secret, err := generateSecret()
+		secret, err := generateSecret(constants.DefaultSecretLength)
 		if err != nil {
 			log.Printf("Error while generating secret")
 			return false
@@ -224,9 +224,11 @@ func wrapSecretBySWK(wrapkey, keyBytes []byte) ([]byte, error) {
 	return append(block[:8], intermediate...), nil
 }
 
-func generateSecret() ([]byte, error) {
-	//TODO: Implement me
-	return nil, nil
+func generateSecret(length int) ([]byte, error) {
+	defaultLog.Trace("controllers/app_verifier_controller:generateSecret() Entering")
+	defer defaultLog.Trace("controllers/app_verifier_controller:generateSecret() Leaving")
+
+	return crypt.GetRandomBytes(length / 8)
 }
 
 func wrapSWKByPublicKey(swk []byte, key []byte) ([]byte, error) {
