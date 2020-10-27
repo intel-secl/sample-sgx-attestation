@@ -5,16 +5,28 @@
 package controllers
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha1"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/intel-secl/intel-secl/v3/pkg/clients/util"
+	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
+	"github.com/intel-secl/intel-secl/v3/pkg/model/kbs"
+	"github.com/intel-secl/sample-sgx-attestation/v3/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
+	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"log"
 	"net/http"
 )
 
 type AppVerifierController struct {
 	Address string
+	Config  *config.Configuration
 }
 
 type AppVerifier struct {
@@ -26,9 +38,8 @@ func (ca AppVerifierController) Verify(w http.ResponseWriter, r *http.Request) {
 	defer defaultLog.Trace("controllers/app_verifier_controller:Create() Leaving")
 	result := ca.VerifyTenantAndShareSecret()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(AppVerifier{Status: result})
+	_ = json.NewEncoder(w).Encode(AppVerifier{Status: result})
 }
-
 
 func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	defaultLog.Trace("controllers/app_verifier_controller:VerifyTenantAndShareSecret() Entering")
@@ -38,7 +49,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	//Following are dummy credential which are not going to evaluate in tenant app
 	params := map[uint8][]byte{
 		constants.ParamTypeUsername: []byte(constants.ServiceUserName), //username
-		constants.ParamTypePassword: []byte("password"), //password
+		constants.ParamTypePassword: []byte("password"),                //password
 	}
 	connectRequest := marshalRequest(constants.ReqTypeConnect, params)
 	tenantAppClient := NewSgxSocketClient(ca.Address)
@@ -68,7 +79,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			}
 		}
 		log.Printf("Verifying SGX quote")
-		err := verifySgxQuote(sgxQuote)
+		err := ca.verifySgxQuote(sgxQuote)
 		if err != nil {
 			log.Printf("Error while verifying SGX quote")
 			return false
@@ -161,9 +172,56 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	return false
 }
 
-func wrapSecretBySWK(secret []byte, swk []byte) ([]byte, error) {
-	//TODO: Implement me
-	return nil, nil
+//wrapSecretBySWK wraps a key using the RFC 3394 AES Key Wrap Algorithm.
+func wrapSecretBySWK(wrapkey, keyBytes []byte) ([]byte, error) {
+	defaultLog.Trace("controllers/app_verifier_controller:wrapSecretBySWK() Entering")
+	defer defaultLog.Trace("controllers/app_verifier_controller:wrapSecretBySWK() Leaving")
+
+	if len(keyBytes)%8 != 0 {
+		return nil, errors.New("controllers/app_verifier_controller:wrapSecretBySWK() Data to be wrapped not correct.")
+	}
+
+	cipher, err := aes.NewCipher(wrapkey)
+	if err != nil {
+		return nil, err
+	}
+
+	nblocks := len(keyBytes) / 8
+
+	// 1) Initialize variables.
+	var block [aes.BlockSize]byte
+	// - Set A = IV, an initial value (see 2.2.3)
+	for i := 0; i < 8; i++ {
+		block[i] = 0xA6
+	}
+
+	// - For i = 1 to n
+	// -   Set R[i] = P[i]
+	intermediate := make([]byte, len(keyBytes))
+	copy(intermediate, keyBytes)
+
+	// 2) Calculate intermediate values.
+	for i := 0; i < 6; i++ {
+		for j := 0; j < nblocks; j++ {
+			// - B = AES(K, A | R[i])
+			copy(block[8:], intermediate[j*8:j*8+8])
+			cipher.Encrypt(block[:], block[:])
+
+			// - A = MSB(64, B) ^ t where t = (n*j)+1
+			t := uint64(i*nblocks + j + 1)
+			blockValue := binary.BigEndian.Uint64(block[:8]) ^ t
+			binary.BigEndian.PutUint64(block[:8], blockValue)
+
+			// - R[i] = LSB(64, B)
+			copy(intermediate[j*8:j*8+8], block[8:])
+		}
+	}
+
+	// 3) Output results.
+	// - Set C[0] = A
+	// - For i = 1 to n
+	// -   C[i] = R[i]
+	return append(block[:8], intermediate...), nil
 }
 
 func generateSecret() ([]byte, error) {
@@ -172,17 +230,87 @@ func generateSecret() ([]byte, error) {
 }
 
 func wrapSWKByPublicKey(swk []byte, key []byte) ([]byte, error) {
-	//TODO: Implement me
-	return nil, nil
+	defaultLog.Trace("controllers/app_verifier_controller:wrapSWKByPublicKey() Entering")
+	defer defaultLog.Trace("controllers/app_verifier_controller:wrapSWKByPublicKey() Leaving")
+
+	rsaPubKey, err := crypt.GetPublicKeyFromPem(key)
+	if err != nil {
+		secLog.WithError(err).Errorf("controllers/app_verifier_controller:wrapSWKByPublicKey() %s : Public key decode failed", commLogMsg.InvalidInputBadParam)
+		return nil, errors.Wrap(err, "Failed to decode public key")
+	}
+
+	rsaKey, ok := rsaPubKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.Wrap(err, "controllers/app_verifier_controller:wrapSWKByPublicKey() Invalid PEM passed in from user, should be RSA.")
+	}
+
+	cipherText, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, rsaKey, swk, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "controllers/app_verifier_controller:wrapSWKByPublicKey() Failed to create cipher key")
+	}
+	return cipherText, nil
 }
 
 func generateSWK() ([]byte, error) {
-	//TODO: Implement me
-	return nil, nil
+	defaultLog.Trace("controllers/app_verifier_controller:generateSWK() Entering")
+	defer defaultLog.Trace("session/app_verifier_controller:generateSWK() Leaving")
+
+	//create an AES Key here of 256 bytes
+	keyBytes := make([]byte, 32)
+	_, err := rand.Read(keyBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "session/session_management:SessionCreateSwk() Failed to read the key bytes")
+	}
+
+	return keyBytes, nil
 }
 
-func verifySgxQuote(quote []byte) error {
-	//TODO: Implement me
+func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
+	defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Entering")
+	defer defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Leaving")
+
+	cfg := ca.Config
+
+	// based on the operation mode - standalone or non-standalone mode
+	// either reach out to SQVS
+	if !ca.Config.StandAloneMode {
+		url := cfg.SQVSUrl + constants.VerifyQuote
+		quoteData := string(quote)
+
+		caCerts, err := crypt.GetCertsFromDir(constants.CaCertsDir)
+		if err != nil {
+			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in retrieving CA certificates")
+		}
+
+		buffer := new(bytes.Buffer)
+		err = json.NewEncoder(buffer).Encode(quoteData)
+		if err != nil {
+			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in encoding the quote")
+		}
+
+		req, err := http.NewRequest("POST", url, buffer)
+		if err != nil {
+			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in Creating request")
+		}
+		req.Header.Add("Accept", "application/json")
+		req.Header.Set("Content-Type", "application/json")
+
+		response, err := util.SendRequest(req, cfg.AASApiUrl, cfg.Service.Username, cfg.Service.Password, caCerts)
+
+		if err != nil {
+			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error getting response body")
+		}
+
+		var responseAttributes *kbs.QuoteVerifyAttributes
+
+		err = json.Unmarshal(response, &responseAttributes)
+		if err != nil {
+			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in unmarshalling response")
+		}
+	} else {
+
+	}
+
 	return nil
 }
 
