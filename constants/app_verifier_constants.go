@@ -15,6 +15,7 @@ const (
 	ApiVersion      = "/v1"
 	// service remove command
 	ServiceRemoveCmd = "systemctl disable sgx-app-verifier"
+	VerifyQuote      = "/verifyQuote"
 )
 
 // these are used only when uninstalling service
@@ -31,24 +32,23 @@ const (
 	CaCertsDir            = ConfigDir + "ca-certs"
 	DefaultConfigFilePath = ConfigDir + "config.yml"
 	ConfigFile            = "config"
-
 )
 
 // tls constants
 const (
 	// default locations for tls certificate and key
-	DefaultTLSKeyFile  = ConfigDir + "tls.key"
-	DefaultTLSCertFile = ConfigDir + "tls-cert.pem"
-	DefaultAppTlsCn     = "SGX APP VERIFIER TLS Certificate"
-	DefaultAppTlsSan    = "127.0.0.1,localhost"
-	DefaultKeyAlgorithm = "rsa"
-	DefaultKeyLength    = 3072
+	DefaultTLSKeyFile                  = ConfigDir + "tls.key"
+	DefaultTLSCertFile                 = ConfigDir + "tls-cert.pem"
+	DefaultAppTlsCn                    = "SGX APP VERIFIER TLS Certificate"
+	DefaultAppTlsSan                   = "127.0.0.1,localhost"
+	DefaultKeyAlgorithm                = "rsa"
+	DefaultKeyLength                   = 3072
 	DefaultSelfSignedCertValidityYears = 1
 )
 
 // general constants for stand alone mode
 const (
-	DefaultStandAloneMode         = true
+	DefaultStandAloneMode = true
 )
 
 // server costants
@@ -64,9 +64,9 @@ const (
 // log constants
 const (
 	DefaultLogEntryMaxlength = 1500
-	LogFile         = LogDir + ServiceUserName + ".log"
-	HttpLogFile     = LogDir + ServiceUserName + "-http.log"
-	SecurityLogFile = LogDir + ServiceUserName + "-security.log"
+	LogFile                  = LogDir + ServiceUserName + ".log"
+	HttpLogFile              = LogDir + ServiceUserName + "-http.log"
+	SecurityLogFile          = LogDir + ServiceUserName + "-security.log"
 )
 
 // jwt constants
@@ -81,23 +81,23 @@ const (
 
 //Protocol type
 const (
-	ReqTypeConnect               uint8  = 1
-	ReqTypePubkeyWrappedSWK      uint8  = 2
-	ReqTypeSWKWrappedSecret      uint8  = 3
+	ReqTypeConnect          uint8 = 1
+	ReqTypePubkeyWrappedSWK uint8 = 2
+	ReqTypeSWKWrappedSecret uint8 = 3
 )
 
 //Param type
 const (
-	ParamTypeUsername            uint8  = 1
-	ParamTypePassword            uint8  = 2
-	ParamTypePubkeyWrappedSwk    uint8  = 3
-	ParamTypeSwkWrappedSecret    uint8  = 4
+	ParamTypeUsername         uint8 = 1
+	ParamTypePassword         uint8 = 2
+	ParamTypePubkeyWrappedSwk uint8 = 3
+	ParamTypeSwkWrappedSecret uint8 = 4
 )
 
 //Response code
 const (
-	ResponseCodeSuccess          uint8  = 1
-	ResponseCodeFailure          uint8  = 2
+	ResponseCodeSuccess uint8 = 1
+	ResponseCodeFailure uint8 = 2
 )
 
 //Response Element
