@@ -62,7 +62,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	}
 	connectResponse, err := unmarshalResponse(connectResponseBytes)
 	if err != nil {
-		defaultLog.Printf("Error while unmarshaling response for connect from Tenant app")
+		defaultLog.Printf("Error while unmarshalling response for connect from Tenant app")
 		return false
 	}
 	if connectResponse != nil && connectResponse.RespCode == constants.ResponseCodeSuccess {
@@ -116,7 +116,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		}
 		wrappedSWKResponse, err := unmarshalResponse(wrappedSWKResponseBytes)
 		if err != nil {
-			defaultLog.Printf("Error while unmarshaling response for wrapped SWK from Tenant app")
+			defaultLog.Printf("Error while unmarshalling response for wrapped SWK from Tenant app")
 			return false
 		}
 		if wrappedSWKResponse != nil && wrappedSWKResponse.RespCode == constants.ResponseCodeSuccess {
@@ -156,7 +156,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		}
 		SWKWrappedSecretResponse, err := unmarshalResponse(SWKWrappedSecretResponseBytes)
 		if err != nil {
-			defaultLog.Printf("Error while unmarshaling response for SWK wrapped secret from Tenant app")
+			defaultLog.Printf("Error while unmarshalling response for SWK wrapped secret from Tenant app")
 			return false
 		}
 		if SWKWrappedSecretResponse != nil && SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess {
