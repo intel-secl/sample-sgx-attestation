@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"log"
+	"intel/isecl/sqvs/v3/resource/parser"
 	"net/http"
 )
 
@@ -45,7 +45,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	defaultLog.Trace("controllers/app_verifier_controller:VerifyTenantAndShareSecret() Entering")
 	defer defaultLog.Trace("controllers/app_verifier_controller:VerifyTenantAndShareSecret() Leaving")
 
-	log.Printf("Forming request to connect to Tenant App")
+	defaultLog.Printf("Forming request to connect to Tenant App")
 	//Following are dummy credential which are not going to evaluate in tenant app
 	params := map[uint8][]byte{
 		constants.ParamTypeUsername: []byte(constants.ServiceUserName), //username
@@ -54,19 +54,19 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	connectRequest := marshalRequest(constants.ReqTypeConnect, params)
 	tenantAppClient := NewSgxSocketClient(ca.Address)
 
-	log.Printf("Sending request to connect to Tenant App and for SGX quote")
+	defaultLog.Printf("Sending request to connect to Tenant App and for SGX quote")
 	connectResponseBytes, err := tenantAppClient.socketRequest(connectRequest)
 	if err != nil {
-		log.Printf("Error connecting to Tenant app")
+		defaultLog.Printf("Error connecting to Tenant app")
 		return false
 	}
 	connectResponse, err := unmarshalResponse(connectResponseBytes)
 	if err != nil {
-		log.Printf("Error while unmarshaling response for connect from Tenant app")
+		defaultLog.Printf("Error while unmarshaling response for connect from Tenant app")
 		return false
 	}
 	if connectResponse != nil && connectResponse.RespCode == constants.ResponseCodeSuccess {
-		log.Printf("Connected to tenant app successfully")
+		defaultLog.Printf("Connected to tenant app successfully")
 
 		var enclavePublicKey []byte
 		var sgxQuote []byte
@@ -78,96 +78,96 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 				sgxQuote = v.Payload
 			}
 		}
-		log.Printf("Verifying SGX quote")
+		defaultLog.Printf("Verifying SGX quote")
 		err := ca.verifySgxQuote(sgxQuote)
 		if err != nil {
-			log.Printf("Error while verifying SGX quote")
+			defaultLog.Printf("Error while verifying SGX quote")
 			return false
 		}
-		log.Printf("Verified SGX quote successfully")
+		defaultLog.Printf("Verified SGX quote successfully")
 
-		log.Printf("Generating SWK")
+		defaultLog.Printf("Generating SWK")
 		swk, err := generateSWK()
 		if err != nil {
-			log.Printf("Error while generating SWK")
+			defaultLog.Printf("Error while generating SWK")
 			return false
 		}
-		log.Printf("Generated SWK successfully")
+		defaultLog.Printf("Generated SWK successfully")
 
-		log.Printf("Wrapping SWK by Tenant Enclave Public Key")
+		defaultLog.Printf("Wrapping SWK by Tenant Enclave Public Key")
 		pubkeyWrappedSWK, err := wrapSWKByPublicKey(swk, enclavePublicKey)
 		if err != nil {
-			log.Printf("Error while wrapping SWK by Tenant enclave ublic key")
+			defaultLog.Printf("Error while wrapping SWK by Tenant enclave ublic key")
 			return false
 		}
-		log.Printf("Wrappped SWK by Tenant Enclave Public Key")
+		defaultLog.Printf("Wrappped SWK by Tenant Enclave Public Key")
 
-		log.Printf("Forming request to send Wrapped SWK to Tenant App")
+		defaultLog.Printf("Forming request to send Wrapped SWK to Tenant App")
 		params = map[uint8][]byte{
 			constants.ParamTypePubkeyWrappedSwk: pubkeyWrappedSWK, //PubkeyWrappedSWK
 		}
 		wrappedSWKRequest := marshalRequest(constants.ReqTypePubkeyWrappedSWK, params)
 
-		log.Printf("Sending request to send Wrapped SWK to Tenant App")
+		defaultLog.Printf("Sending request to send Wrapped SWK to Tenant App")
 		wrappedSWKResponseBytes, err := tenantAppClient.socketRequest(wrappedSWKRequest)
 		if err != nil {
-			log.Printf("Error while getting response for wrapped SWK from Tenant app")
+			defaultLog.Printf("Error while getting response for wrapped SWK from Tenant app")
 			return false
 		}
 		wrappedSWKResponse, err := unmarshalResponse(wrappedSWKResponseBytes)
 		if err != nil {
-			log.Printf("Error while unmarshaling response for wrapped SWK from Tenant app")
+			defaultLog.Printf("Error while unmarshaling response for wrapped SWK from Tenant app")
 			return false
 		}
 		if wrappedSWKResponse != nil && wrappedSWKResponse.RespCode == constants.ResponseCodeSuccess {
-			log.Printf("Wrapped SWK sent to Tenant App successfully")
+			defaultLog.Printf("Wrapped SWK sent to Tenant App successfully")
 		} else {
-			log.Printf("Failed to send Wrapped SWK sent to Tenant App")
+			defaultLog.Printf("Failed to send Wrapped SWK sent to Tenant App")
 			return false
 		}
 
-		log.Printf("Generating new secret")
+		defaultLog.Printf("Generating new secret")
 		secret, err := generateSecret(constants.DefaultSecretLength)
 		if err != nil {
-			log.Printf("Error while generating secret")
+			defaultLog.Printf("Error while generating secret")
 			return false
 		}
-		log.Printf("Generated new secret successfully")
+		defaultLog.Printf("Generated new secret successfully")
 
-		log.Printf("Wrapping secret by SWK")
+		defaultLog.Printf("Wrapping secret by SWK")
 		swkWrappedSecret, err := wrapSecretBySWK(secret, swk)
 		if err != nil {
-			log.Printf("Error while wrapping SWK by Tenant enclave ublic key")
+			defaultLog.Printf("Error while wrapping SWK by Tenant enclave ublic key")
 			return false
 		}
-		log.Printf("Wrapped secret by SWK successfully")
+		defaultLog.Printf("Wrapped secret by SWK successfully")
 
-		log.Printf("Forming request to send Wrapped Secret by SWK to Tenant App")
+		defaultLog.Printf("Forming request to send Wrapped Secret by SWK to Tenant App")
 		params = map[uint8][]byte{
 			constants.ParamTypeSwkWrappedSecret: swkWrappedSecret, //SwkWrappedSecret
 		}
-		log.Printf("Sending request to send Wrapped Secret SWK to Tenant App")
+		defaultLog.Printf("Sending request to send Wrapped Secret SWK to Tenant App")
 		SWKWrappedSecretRequest := marshalRequest(constants.ReqTypeSWKWrappedSecret, params)
 
 		SWKWrappedSecretResponseBytes, err := tenantAppClient.socketRequest(SWKWrappedSecretRequest)
 		if err != nil {
-			log.Printf("Error while getting response for SWK wrapped secret from Tenant app")
+			defaultLog.Printf("Error while getting response for SWK wrapped secret from Tenant app")
 			return false
 		}
 		SWKWrappedSecretResponse, err := unmarshalResponse(SWKWrappedSecretResponseBytes)
 		if err != nil {
-			log.Printf("Error while unmarshaling response for SWK wrapped secret from Tenant app")
+			defaultLog.Printf("Error while unmarshaling response for SWK wrapped secret from Tenant app")
 			return false
 		}
 		if SWKWrappedSecretResponse != nil && SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess {
-			log.Printf("Wrapped Secret by SWK sent to Tenant App successfully")
+			defaultLog.Printf("Wrapped Secret by SWK sent to Tenant App successfully")
 			return SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess
 		} else {
-			log.Printf("Failed to send Wrapped Secret by SWK sent to Tenant App")
+			defaultLog.Printf("Failed to send Wrapped Secret by SWK sent to Tenant App")
 			return false
 		}
 	} else {
-		log.Printf("Failed to connect to Tenant App")
+		defaultLog.Printf("Failed to connect to Tenant App")
 	}
 	return false
 }
@@ -298,21 +298,20 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 		req.Header.Set("Content-Type", "application/json")
 
 		response, err := util.SendRequest(req, cfg.AASApiUrl, cfg.Service.Username, cfg.Service.Password, caCerts)
-
-		if err != nil {
-			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error getting response body")
-		}
-
 		var responseAttributes *kbs.QuoteVerifyAttributes
 
 		err = json.Unmarshal(response, &responseAttributes)
 		if err != nil {
 			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in unmarshalling response")
 		}
+		defaultLog.Info("controllers/app_verifier_controller:verifyQuote() Successfully verified quote in non-standalone mode")
 	} else {
-
+		// for standalone mode, pass quote to the SQVS stub
+		parsedBlob := parser.ParseSkcQuoteBlob(string(quote))
+		if parsedBlob == nil {
+			return errors.New("controllers/app_verifier_controller:verifyQuote() Error parsing quote")
+		}
 	}
-
 	return nil
 }
 
