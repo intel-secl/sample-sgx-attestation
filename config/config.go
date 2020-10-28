@@ -19,7 +19,7 @@ type Configuration struct {
 	AASApiUrl        string        `yaml:"aas-base-url" mapstructure:"aas-base-url"`
 	CMSBaseURL       string        `yaml:"cms-base-url" mapstructure:"cms-base-url"`
 	CmsTlsCertDigest string        `yaml:"cms-tls-cert-sha384" mapstructure:"cms-tls-cert-sha384"`
-	SQVSUrl          string        `yaml:"sqvs-url" mapstructure:"sqvs-url"`
+	SqvsUrl          string        `yaml:"sqvs-url" mapstructure:"sqvs-url"`
 	Service          ServiceConfig `yaml:"service" mapstructure:"service"`
 	TLS              TLSCertConfig `yaml:"tls" mapstructure:"tls"`
 	Server           ServerConfig  `yaml:"server" mapstructure:"server"`

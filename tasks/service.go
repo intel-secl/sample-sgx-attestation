@@ -19,11 +19,13 @@ type Service struct {
 	AASApiUrl        string
 	CMSBaseURL       string
 	CmsTlsCertDigest string
+	SqvsUrl          string
 
 	SvcConfigPtr        *config.ServiceConfig
 	AASApiUrlPtr        *string
 	CMSBaseURLPtr       *string
 	CmsTlsCertDigestPtr *string
+	SqvsUrlPtr          *string
 
 	ConsoleWriter io.Writer
 
@@ -33,17 +35,19 @@ type Service struct {
 const svcEnvHelpPrompt = "Following environment variables are required for Service setup:"
 
 var svcEnvHelp = map[string]string{
-	"SERVICE_USERNAME":     "The service username for SGX APP VERIFIER configured in AAS for non stand alone mode",
-	"SERVICE_PASSWORD":     "The service password for SGX APP VERIFIER configured in AAS for non stand alone mode",
-	"AAS_BASE_URL":         "The url to AAS",
-	"CMS_BASE_URL":         "The url to CMS",
-	"CMS_TLS_CERT_SHA384":  "The certificate sha384 digest of CMS",
+	"SERVICE_USERNAME":    "The service username for SGX APP VERIFIER configured in AAS for non stand alone mode",
+	"SERVICE_PASSWORD":    "The service password for SGX APP VERIFIER configured in AAS for non stand alone mode",
+	"AAS_BASE_URL":        "The url to AAS",
+	"CMS_BASE_URL":        "The url to CMS",
+	"CMS_TLS_CERT_SHA384": "The certificate sha384 digest of CMS",
+	"SQVS_URL":            "The url to SQVS",
 }
 
 func (t *Service) Run(c setup.Context) error {
 	if t.SvcConfigPtr == nil ||
 		t.AASApiUrlPtr == nil ||
 		t.CMSBaseURLPtr == nil ||
+		t.SqvsUrlPtr == nil ||
 		t.CmsTlsCertDigestPtr == nil {
 		return errors.New("Pointer to service configuration structure can not be nil")
 	}
@@ -68,9 +72,13 @@ func (t *Service) Run(c setup.Context) error {
 	if t.CmsTlsCertDigest == "" {
 		return errors.New("SGX APP VERIFIER configuration not provided: CMS_TLS_CERT_SHA384 is not set")
 	}
+	if t.SqvsUrl == "" {
+		return errors.New("SGX APP VERIFIER configuration not provided: SQVS_URL is not set")
+	}
 	*t.AASApiUrlPtr = t.AASApiUrl
 	*t.CMSBaseURLPtr = t.CMSBaseURL
 	*t.CmsTlsCertDigestPtr = t.CmsTlsCertDigest
+	*t.SqvsUrlPtr = t.SqvsUrl
 	return nil
 }
 
@@ -83,7 +91,8 @@ func (t *Service) Validate(c setup.Context) error {
 	}
 	if *t.AASApiUrlPtr == "" ||
 		*t.CMSBaseURLPtr == "" ||
-		*t.CmsTlsCertDigestPtr == "" {
+		*t.CmsTlsCertDigestPtr == "" ||
+		*t.SqvsUrlPtr == "" {
 		return errors.New("Configured service CMS-AAS config is not valid")
 	}
 	if !t.StandAloneMode {

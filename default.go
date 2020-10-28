@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-
 // this func sets the default values for viper keys
 func init() {
 	// set default values for stand alone mode
@@ -39,10 +38,11 @@ func init() {
 func defaultConfig() *config.Configuration {
 	// support old service env
 	return &config.Configuration{
-		StandAloneMode: viper.GetBool("stand-alone-mode"),
+		StandAloneMode:   viper.GetBool("stand-alone-mode"),
 		AASApiUrl:        viper.GetString("aas-base-url"),
 		CMSBaseURL:       viper.GetString("cms-base-url"),
 		CmsTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
+		SqvsUrl:          viper.GetString("sqvs-url"),
 		Service: config.ServiceConfig{
 			Username: viper.GetString("service-username"),
 			Password: viper.GetString("service-password"),

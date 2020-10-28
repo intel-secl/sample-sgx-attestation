@@ -51,11 +51,6 @@ func InitRoutes(cfg *config.Configuration) *mux.Router {
 		cacheTime))
 	subRouter = SetAppVerifierRoutes(subRouter, cfg)
 
-	subRouter.Use(cmw.NewTokenAuth(constants.CaCertsDir,
-		constants.CaCertsDir, cfgRouter.fnGetJwtCerts,
-		cacheTime))
-	subRouter = SetSqvsStubRoutes(subRouter)
-
 	return router
 }
 
