@@ -276,7 +276,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	// based on the operation mode - standalone or non-standalone mode
 	// either reach out to SQVS
 	if !ca.Config.StandAloneMode {
-		url := cfg.SQVSUrl + constants.VerifyQuote
+		url := cfg.SqvsUrl + constants.VerifyQuote
 		quoteData := string(quote)
 
 		caCerts, err := crypt.GetCertsFromDir(constants.CaCertsDir)
