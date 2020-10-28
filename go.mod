@@ -10,9 +10,14 @@ require (
 	github.com/spf13/viper v1.7.0
 	gopkg.in/yaml.v2 v2.3.0
 	intel/isecl/lib/common/v3 v3.2.0
+        intel/isecl/sqvs/v3 v3.2.0
 )
 
 replace intel/isecl/lib/common/v3 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v3 v3.2/develop
 
 replace github.com/intel-secl/intel-secl/v3 => gitlab.devtools.intel.com/sst/isecl/intel-secl.git/v3 v3.2/develop
+
+replace intel/isecl/sqvs/v3 => gitlab.devtools.intel.com/sst/isecl/sgx-verification-service.git/v3 v3.2/task/ISECL-12232
+
+replace intel/isecl/lib/clients/v3 => gitlab.devtools.intel.com/sst/isecl/lib/clients.git/v3 v3.2/develop
 
