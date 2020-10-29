@@ -8,6 +8,7 @@ package router
 import (
 	"github.com/gorilla/mux"
 	"github.com/intel-secl/sample-sgx-attestation/v3/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/controllers"
 	"strconv"
 	"strings"
@@ -19,7 +20,12 @@ func SetAppVerifierRoutes(router *mux.Router, config *config.Configuration) *mux
 
 	caCertController := controllers.AppVerifierController{
 		Address: strings.Join([]string{"127.0.0.1", strconv.Itoa(999)}, ":"),
-		Config: config,
+		Config:  config,
+		ExtVerifier: controllers.ExternalVerifier{
+			Config:     config,
+			CaCertsDir: constants.CaCertsDir,
+		},
+		SaVerifier: controllers.StandaloneVerifier{},
 	}
 	router.HandleFunc("/verify", caCertController.Verify).Methods("GET")
 	return router

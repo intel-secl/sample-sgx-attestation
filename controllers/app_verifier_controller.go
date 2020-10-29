@@ -5,31 +5,29 @@
 package controllers
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/intel-secl/intel-secl/v3/pkg/clients/util"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
-	"github.com/intel-secl/intel-secl/v3/pkg/model/kbs"
 	"github.com/intel-secl/sample-sgx-attestation/v3/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"intel/isecl/sqvs/v3/resource/parser"
 	"net/http"
 )
 
 type AppVerifierController struct {
-	Address string
-	Config  *config.Configuration
+	Address     string
+	Config      *config.Configuration
+	ExtVerifier ExternalVerifier
+	SaVerifier  StandaloneVerifier
 }
 
-type AppVerifier struct {
+type appVerifierResponse struct {
 	Status bool
 }
 
@@ -38,7 +36,7 @@ func (ca AppVerifierController) Verify(w http.ResponseWriter, r *http.Request) {
 	defer defaultLog.Trace("controllers/app_verifier_controller:Create() Leaving")
 	result := ca.VerifyTenantAndShareSecret()
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(AppVerifier{Status: result})
+	_ = json.NewEncoder(w).Encode(appVerifierResponse{Status: result})
 }
 
 func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
@@ -271,48 +269,16 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Entering")
 	defer defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Leaving")
 
-	cfg := ca.Config
+	// convert byte array to string
+	qData := string(quote)
 
 	// based on the operation mode - standalone or non-standalone mode
 	// either reach out to SQVS
 	if !ca.Config.StandAloneMode {
-		url := cfg.SqvsUrl + constants.VerifyQuote
-		quoteData := string(quote)
-
-		caCerts, err := crypt.GetCertsFromDir(constants.CaCertsDir)
-		if err != nil {
-			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in retrieving CA certificates")
-		}
-
-		buffer := new(bytes.Buffer)
-		err = json.NewEncoder(buffer).Encode(quoteData)
-		if err != nil {
-			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in encoding the quote")
-		}
-
-		req, err := http.NewRequest("POST", url, buffer)
-		if err != nil {
-			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in Creating request")
-		}
-		req.Header.Add("Accept", "application/json")
-		req.Header.Set("Content-Type", "application/json")
-
-		response, err := util.SendRequest(req, cfg.AASApiUrl, cfg.Service.Username, cfg.Service.Password, caCerts)
-		var responseAttributes *kbs.QuoteVerifyAttributes
-
-		err = json.Unmarshal(response, &responseAttributes)
-		if err != nil {
-			return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in unmarshalling response")
-		}
-		defaultLog.Info("controllers/app_verifier_controller:verifyQuote() Successfully verified quote in non-standalone mode")
+		return ca.ExtVerifier.VerifyQuote(qData)
 	} else {
-		// for standalone mode, pass quote to the SQVS stub
-		parsedBlob := parser.ParseSkcQuoteBlob(string(quote))
-		if parsedBlob == nil {
-			return errors.New("controllers/app_verifier_controller:verifyQuote() Error parsing quote")
-		}
+		return ca.SaVerifier.VerifyQuote(qData)
 	}
-	return nil
 }
 
 func getLengthInBytes(length int) []byte {
