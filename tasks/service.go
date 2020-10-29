@@ -54,10 +54,13 @@ func (t *Service) Run(c setup.Context) error {
 
 	if !t.StandAloneMode {
 		if t.Username == "" {
-			return errors.New("SGX APP VERIFIER configuration not provided: SGX APP VERIFIER_SERVICE_USERNAME is not set")
+			return errors.New("SGX APP VERIFIER configuration not provided: VERIFIER_SERVICE_USERNAME is not set")
 		}
 		if t.Password == "" {
-			return errors.New("SGX APP VERIFIER configuration not provided: SGX APP VERIFIER_SERVICE_PASSWORD is not set")
+			return errors.New("SGX APP VERIFIER configuration not provided: VERIFIER_SERVICE_PASSWORD is not set")
+		}
+		if t.SqvsUrl == "" {
+			return errors.New("SGX APP VERIFIER configuration not provided: SQVS_URL is not set")
 		}
 		t.SvcConfigPtr.Username = t.Username
 		t.SvcConfigPtr.Password = t.Password
@@ -72,9 +75,7 @@ func (t *Service) Run(c setup.Context) error {
 	if t.CmsTlsCertDigest == "" {
 		return errors.New("SGX APP VERIFIER configuration not provided: CMS_TLS_CERT_SHA384 is not set")
 	}
-	if t.SqvsUrl == "" {
-		return errors.New("SGX APP VERIFIER configuration not provided: SQVS_URL is not set")
-	}
+
 	*t.AASApiUrlPtr = t.AASApiUrl
 	*t.CMSBaseURLPtr = t.CMSBaseURL
 	*t.CmsTlsCertDigestPtr = t.CmsTlsCertDigest
