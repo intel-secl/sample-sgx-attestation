@@ -15,17 +15,19 @@ import (
 
 type Service struct {
 	config.ServiceConfig
-	StandAloneMode   bool
-	AASApiUrl        string
-	CMSBaseURL       string
-	CmsTlsCertDigest string
-	SqvsUrl          string
+	StandAloneMode    bool
+	AASApiUrl         string
+	CMSBaseURL        string
+	CmsTlsCertDigest  string
+	SqvsUrl           string
+	TrustedRootCAPath string
 
-	SvcConfigPtr        *config.ServiceConfig
-	AASApiUrlPtr        *string
-	CMSBaseURLPtr       *string
-	CmsTlsCertDigestPtr *string
-	SqvsUrlPtr          *string
+	SvcConfigPtr         *config.ServiceConfig
+	AASApiUrlPtr         *string
+	CMSBaseURLPtr        *string
+	CmsTlsCertDigestPtr  *string
+	SqvsUrlPtr           *string
+	TrustedRootCAPathPtr *string
 
 	ConsoleWriter io.Writer
 
@@ -35,12 +37,13 @@ type Service struct {
 const svcEnvHelpPrompt = "Following environment variables are required for Service setup:"
 
 var svcEnvHelp = map[string]string{
-	"SERVICE_USERNAME":    "The service username for SGX APP VERIFIER configured in AAS for non stand alone mode",
-	"SERVICE_PASSWORD":    "The service password for SGX APP VERIFIER configured in AAS for non stand alone mode",
-	"AAS_BASE_URL":        "The url to AAS",
-	"CMS_BASE_URL":        "The url to CMS",
-	"CMS_TLS_CERT_SHA384": "The certificate sha384 digest of CMS",
-	"SQVS_URL":            "The url to SQVS",
+	"SERVICE_USERNAME":         "The service username for SGX APP VERIFIER configured in AAS for non stand alone mode",
+	"SERVICE_PASSWORD":         "The service password for SGX APP VERIFIER configured in AAS for non stand alone mode",
+	"AAS_BASE_URL":             "The url to AAS",
+	"CMS_BASE_URL":             "The url to CMS",
+	"CMS_TLS_CERT_SHA384":      "The certificate sha384 digest of CMS",
+	"SQVS_URL":                 "The url to SQVS",
+	"SGX_TRUSTED_ROOT_CA_PATH": "SQVS Trusted Root CA path",
 }
 
 func (t *Service) Run(c setup.Context) error {
@@ -48,6 +51,7 @@ func (t *Service) Run(c setup.Context) error {
 		t.AASApiUrlPtr == nil ||
 		t.CMSBaseURLPtr == nil ||
 		t.SqvsUrlPtr == nil ||
+		t.TrustedRootCAPathPtr == nil ||
 		t.CmsTlsCertDigestPtr == nil {
 		return errors.New("Pointer to service configuration structure can not be nil")
 	}
@@ -80,6 +84,7 @@ func (t *Service) Run(c setup.Context) error {
 	*t.CMSBaseURLPtr = t.CMSBaseURL
 	*t.CmsTlsCertDigestPtr = t.CmsTlsCertDigest
 	*t.SqvsUrlPtr = t.SqvsUrl
+	*t.TrustedRootCAPathPtr = t.TrustedRootCAPath
 	return nil
 }
 
