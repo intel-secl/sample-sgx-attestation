@@ -15,15 +15,16 @@ import (
 )
 
 type Configuration struct {
-	StandAloneMode   bool          `yaml:"stand-alone-mode" mapstructure:"stand-alone-mode"`
-	AASApiUrl        string        `yaml:"aas-base-url" mapstructure:"aas-base-url"`
-	CMSBaseURL       string        `yaml:"cms-base-url" mapstructure:"cms-base-url"`
-	CmsTlsCertDigest string        `yaml:"cms-tls-cert-sha384" mapstructure:"cms-tls-cert-sha384"`
-	SqvsUrl          string        `yaml:"sqvs-url" mapstructure:"sqvs-url"`
-	Service          ServiceConfig `yaml:"service" mapstructure:"service"`
-	TLS              TLSCertConfig `yaml:"tls" mapstructure:"tls"`
-	Server           ServerConfig  `yaml:"server" mapstructure:"server"`
-	Log              LogConfig     `yaml:"log" mapstructure:"log"`
+	StandAloneMode    bool          `yaml:"stand-alone-mode" mapstructure:"stand-alone-mode"`
+	AASApiUrl         string        `yaml:"aas-base-url" mapstructure:"aas-base-url"`
+	CMSBaseURL        string        `yaml:"cms-base-url" mapstructure:"cms-base-url"`
+	CmsTlsCertDigest  string        `yaml:"cms-tls-cert-sha384" mapstructure:"cms-tls-cert-sha384"`
+	SqvsUrl           string        `yaml:"sqvs-url" mapstructure:"sqvs-url"`
+	Service           ServiceConfig `yaml:"service" mapstructure:"service"`
+	TLS               TLSCertConfig `yaml:"tls" mapstructure:"tls"`
+	Server            ServerConfig  `yaml:"server" mapstructure:"server"`
+	Log               LogConfig     `yaml:"log" mapstructure:"log"`
+	TrustedRootCAPath string        `yaml:"trusted-root-ca-path" mapstructure:"trusted-root-ca-path"`
 }
 
 type LogConfig struct {
