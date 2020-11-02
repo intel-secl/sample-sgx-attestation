@@ -16,3 +16,11 @@ type TenantAppResponse struct {
 	ParamLength uint16
 	Elements    []TenantAppResponseElement
 }
+
+type SwResponse struct {
+	Status                string
+	Message               string
+	SwIssuer              string
+	ChallengeKeyType      string
+	ChallengeRsaPublicKey string
+}
