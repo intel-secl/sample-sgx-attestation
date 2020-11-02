@@ -11,20 +11,34 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
+	"intel/isecl/sqvs/v3/resource/parser"
+	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
+type resourceError struct {
+	StatusCode int
+	Message    string
+}
+
+func (e resourceError) Error() string {
+	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
+}
+
 type AppVerifierController struct {
-	Address     string
-	Config      *config.Configuration
-	ExtVerifier ExternalVerifier
-	SaVerifier  StandaloneVerifier
+	Address            string
+	Config             *config.Configuration
+	ExtVerifier        ExternalVerifier
+	SaVerifier         StandaloneVerifier
+	SgxQuotePolicyPath string
 }
 
 type appVerifierResponse struct {
@@ -44,20 +58,24 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	defer defaultLog.Trace("controllers/app_verifier_controller:VerifyTenantAndShareSecret() Leaving")
 
 	defaultLog.Printf("Forming request to connect to Tenant App")
-	//Following are dummy credential which are not going to evaluate in tenant app
+
+	//Following are dummy credentials which are not going to be validated in tenant app
 	params := map[uint8][]byte{
-		constants.ParamTypeUsername: []byte(constants.ServiceUserName), //username
-		constants.ParamTypePassword: []byte("password"),                //password
+		constants.ParamTypeUsername: []byte(constants.TenantUsername), //username
+		constants.ParamTypePassword: []byte(constants.TenantPassword), //password
 	}
 	connectRequest := marshalRequest(constants.ReqTypeConnect, params)
 	tenantAppClient := NewSgxSocketClient(ca.Address)
 
+	// send the connect request to tenant app
 	defaultLog.Printf("Sending request to connect to Tenant App and for SGX quote")
 	connectResponseBytes, err := tenantAppClient.socketRequest(connectRequest)
 	if err != nil {
 		defaultLog.Printf("Error connecting to Tenant app")
 		return false
 	}
+
+	// parse connect request response from tenant app
 	connectResponse, err := unmarshalResponse(connectResponseBytes)
 	if err != nil {
 		defaultLog.Printf("Error while unmarshalling response for connect from Tenant app")
@@ -271,6 +289,49 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 
 	// convert byte array to string
 	qData := string(quote)
+
+	// load quote policy from path
+	qpRaw, err := ioutil.ReadFile(ca.SgxQuotePolicyPath)
+	if err != nil {
+		return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in reading quote policy file")
+	}
+
+	// split by newline
+	lines := strings.Split(string(qpRaw), "\n")
+	var mreValue, mrSignerValue, cpusvnValue string
+	for _, line := range lines {
+		// split by :
+		lv := strings.Split(line, constants.PolicyFileDelim)
+		if len(lv) != 2 {
+			return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Error parsing quote policy file: incorrect number of fields: %d", len(lv))
+		}
+		// switch by field name
+		switch lv[0] {
+		case constants.MREnclaveField:
+			mreValue = lv[1]
+		case constants.MRSignerField:
+			mrSignerValue = lv[1]
+		case constants.CpuSvnField:
+			cpusvnValue = lv[2]
+		}
+	}
+
+	// compare against hardcoded SGX quote policy
+	parsedQBlob := parser.ParseEcdsaQuoteBlob(qpRaw)
+	if parsedQBlob != nil {
+		return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error parsing quote")
+	}
+
+	// verify against the quote policy
+	if fmt.Sprintf("%02x", parsedQBlob.Header.ReportBody.MrEnclave) != mreValue {
+		return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
+	}
+	if fmt.Sprintf("%02x", parsedQBlob.Header.ReportBody.CpuSvn) != cpusvnValue {
+		return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
+	}
+	if fmt.Sprintf("%02x", parsedQBlob.GetQeReportMrSigner()) != mrSignerValue {
+		return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
+	}
 
 	// based on the operation mode - standalone or non-standalone mode
 	// either reach out to SQVS
