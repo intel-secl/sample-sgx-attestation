@@ -12,10 +12,14 @@ const (
 	ServiceName     = "SGX APP VERIFIER"
 	ServiceDir      = "sgx-app-verifier/"
 	ServiceUserName = "sgx-app-verifier"
+	TenantUsername  = "tenantusername"
+	TenantPassword  = "tenantpassw0rd"
 	ApiVersion      = "/v1"
 	// service remove command
-	ServiceRemoveCmd = "systemctl disable sgx-app-verifier"
-	VerifyQuote      = "/verifyQuote"
+	ServiceRemoveCmd           = "systemctl disable sgx-app-verifier"
+	VerifyQuote                = "/verifyQuote"
+	DefaultTenantAppListenHost = "127.0.0.1"
+	DefaultTenantAppListenPort = 999
 )
 
 // these are used only when uninstalling service
@@ -32,6 +36,7 @@ const (
 	CaCertsDir            = ConfigDir + "ca-certs"
 	DefaultConfigFilePath = ConfigDir + "config.yml"
 	ConfigFile            = "config"
+	SgxQuotePolicyPath    = ConfigDir + "sgx-quote.txt"
 )
 
 // tls constants
@@ -109,4 +114,12 @@ const (
 
 const (
 	StopCharacter = "\r\n\r\n"
+)
+
+// SGX Policy
+const (
+	MREnclaveField  = "MREnclave"
+	MRSignerField   = "MRSigner"
+	CpuSvnField     = "CPU_SVN"
+	PolicyFileDelim = ":"
 )

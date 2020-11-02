@@ -19,13 +19,14 @@ func SetAppVerifierRoutes(router *mux.Router, config *config.Configuration) *mux
 	defer defaultLog.Trace("router/app_verifier:SetAppVerifierRoutes() Leaving")
 
 	caCertController := controllers.AppVerifierController{
-		Address: strings.Join([]string{"127.0.0.1", strconv.Itoa(999)}, ":"),
+		Address: strings.Join([]string{constants.DefaultTenantAppListenHost, strconv.Itoa(constants.DefaultAppListenerPort)}, ":"),
 		Config:  config,
 		ExtVerifier: controllers.ExternalVerifier{
 			Config:     config,
 			CaCertsDir: constants.CaCertsDir,
 		},
-		SaVerifier: controllers.StandaloneVerifier{},
+		SaVerifier:         controllers.StandaloneVerifier{},
+		SgxQuotePolicyPath: constants.SgxQuotePolicyPath,
 	}
 	router.HandleFunc("/verify", caCertController.Verify).Methods("GET")
 	return router
