@@ -64,7 +64,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		constants.ParamTypeUsername: []byte(constants.TenantUsername), //username
 		constants.ParamTypePassword: []byte(constants.TenantPassword), //password
 	}
-	connectRequest := marshalRequest(constants.ReqTypeConnect, params)
+	connectRequest := MarshalRequest(constants.ReqTypeConnect, params)
 	tenantAppClient := NewSgxSocketClient(ca.Address)
 
 	// send the connect request to tenant app
@@ -76,7 +76,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	}
 
 	// parse connect request response from tenant app
-	connectResponse, err := unmarshalResponse(connectResponseBytes)
+	connectResponse, err := UnmarshalResponse(connectResponseBytes)
 	if err != nil {
 		defaultLog.Printf("Error while unmarshalling response for connect from Tenant app")
 		return false
@@ -122,7 +122,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		params = map[uint8][]byte{
 			constants.ParamTypePubkeyWrappedSwk: pubkeyWrappedSWK, //PubkeyWrappedSWK
 		}
-		wrappedSWKRequest := marshalRequest(constants.ReqTypePubkeyWrappedSWK, params)
+		wrappedSWKRequest := MarshalRequest(constants.ReqTypePubkeyWrappedSWK, params)
 
 		defaultLog.Printf("Sending request to send Wrapped SWK to Tenant App")
 		wrappedSWKResponseBytes, err := tenantAppClient.socketRequest(wrappedSWKRequest)
@@ -130,7 +130,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			defaultLog.Printf("Error while getting response for wrapped SWK from Tenant app")
 			return false
 		}
-		wrappedSWKResponse, err := unmarshalResponse(wrappedSWKResponseBytes)
+		wrappedSWKResponse, err := UnmarshalResponse(wrappedSWKResponseBytes)
 		if err != nil {
 			defaultLog.Printf("Error while unmarshalling response for wrapped SWK from Tenant app")
 			return false
@@ -163,14 +163,14 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			constants.ParamTypeSwkWrappedSecret: swkWrappedSecret, //SwkWrappedSecret
 		}
 		defaultLog.Printf("Sending request to send Wrapped Secret SWK to Tenant App")
-		SWKWrappedSecretRequest := marshalRequest(constants.ReqTypeSWKWrappedSecret, params)
+		SWKWrappedSecretRequest := MarshalRequest(constants.ReqTypeSWKWrappedSecret, params)
 
 		SWKWrappedSecretResponseBytes, err := tenantAppClient.socketRequest(SWKWrappedSecretRequest)
 		if err != nil {
 			defaultLog.Printf("Error while getting response for SWK wrapped secret from Tenant app")
 			return false
 		}
-		SWKWrappedSecretResponse, err := unmarshalResponse(SWKWrappedSecretResponseBytes)
+		SWKWrappedSecretResponse, err := UnmarshalResponse(SWKWrappedSecretResponseBytes)
 		if err != nil {
 			defaultLog.Printf("Error while unmarshalling response for SWK wrapped secret from Tenant app")
 			return false
