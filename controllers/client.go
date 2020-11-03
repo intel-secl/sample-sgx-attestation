@@ -50,6 +50,7 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 //parameter_type: uint8: one of username (1), password (2), pubkeywrappedswk (3), and swkrappedSecret (4)
 //parameter_length: uint16
 //Note: the format version has been omitted for simplicity.
+// MarshalRequest converts a TenantAppRequest into a byte-array prior to transmission
 func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	var connectRequest []byte
 	connectRequest = append(connectRequest, requestType)
@@ -62,6 +63,7 @@ func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	return connectRequest
 }
 
+// MarshalResponse converts a TenantAppResponse into a byte-array prior to transmission
 func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	var respBytes []byte
 	respBytes = append(respBytes, resp.RequestType)
@@ -76,6 +78,7 @@ func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	return respBytes
 }
 
+// UnmarshalRequest extracts TenantAppRequest from a byte-array
 func UnmarshalRequest(req []byte) domain.TenantAppRequest {
 	var tar domain.TenantAppRequest
 	// get Request Type
@@ -106,6 +109,7 @@ func UnmarshalRequest(req []byte) domain.TenantAppRequest {
 //response_element _type: uint8: one of sgxquote (1), enclavepubkey (2)
 //response_element _length: uint16
 //Note: the format version has been omitted for simplicity.
+// UnmarshalResponse extracts TenantAppResponse from a byte-array
 func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 	var connectResponse domain.TenantAppResponse
 
