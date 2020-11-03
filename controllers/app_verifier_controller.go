@@ -342,7 +342,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	}
 }
 
-func getLengthInBytes(length int) []byte {
+func GetLengthInBytes(length int) []byte {
 	lengthBytes := make([]byte, 2)
 	binary.BigEndian.PutUint16(lengthBytes, cast.ToUint16(length))
 	return lengthBytes

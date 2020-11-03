@@ -54,10 +54,10 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	var connectRequest []byte
 	connectRequest = append(connectRequest, requestType)
-	connectRequest = append(connectRequest, getLengthInBytes(len(params))...)
+	connectRequest = append(connectRequest, GetLengthInBytes(len(params))...)
 	for paramType, paramValue := range params {
 		connectRequest = append(connectRequest, paramType)
-		connectRequest = append(connectRequest, getLengthInBytes(len(paramValue))...)
+		connectRequest = append(connectRequest, GetLengthInBytes(len(paramValue))...)
 		connectRequest = append(connectRequest, paramValue...)
 	}
 	return connectRequest
@@ -68,10 +68,10 @@ func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	var respBytes []byte
 	respBytes = append(respBytes, resp.RequestType)
 	respBytes = append(respBytes, resp.RespCode)
-	respBytes = append(respBytes, getLengthInBytes(int(resp.ParamLength))...)
+	respBytes = append(respBytes, GetLengthInBytes(int(resp.ParamLength))...)
 	for _, paramValue := range resp.Elements {
 		respBytes = append(respBytes, paramValue.Type)
-		respBytes = append(respBytes, getLengthInBytes(int(paramValue.Length))...)
+		respBytes = append(respBytes, GetLengthInBytes(int(paramValue.Length))...)
 		respBytes = append(respBytes, paramValue.Payload...)
 	}
 
