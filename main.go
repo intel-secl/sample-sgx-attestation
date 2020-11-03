@@ -89,7 +89,7 @@ func main() {
 
 	err = app.Run(os.Args)
 	if err != nil {
-		fmt.Println("Application returned with error:", err.Error())
+		fmt.Println("Tenant Verifier Application returned with error:", err.Error())
 		os.Exit(1)
 	}
 }
