@@ -4,7 +4,7 @@
  */
 package domain
 
-type TenantAppResponseElement struct {
+type TenantAppMessageElement struct {
 	Type    uint8
 	Length  uint16
 	Payload []byte
@@ -14,7 +14,13 @@ type TenantAppResponse struct {
 	RequestType uint8
 	RespCode    uint8
 	ParamLength uint16
-	Elements    []TenantAppResponseElement
+	Elements    []TenantAppMessageElement
+}
+
+type TenantAppRequest struct {
+	RequestType uint8
+	ParamLength uint16
+	Elements    []TenantAppMessageElement
 }
 
 type SwResponse struct {

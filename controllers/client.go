@@ -22,7 +22,6 @@ func NewSgxSocketClient(address string) *TenantAppClient {
 	return &TenantAppClient{address: address}
 }
 
-
 func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 	// connect to server
 	conn, err := net.Dial(constants.ProtocolTcp, client.address)
@@ -51,7 +50,7 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 //parameter_type: uint8: one of username (1), password (2), pubkeywrappedswk (3), and swkrappedSecret (4)
 //parameter_length: uint16
 //Note: the format version has been omitted for simplicity.
-func marshalRequest(requestType uint8, params map[uint8][]byte) []byte {
+func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	var connectRequest []byte
 	connectRequest = append(connectRequest, requestType)
 	connectRequest = append(connectRequest, getLengthInBytes(len(params))...)
@@ -61,6 +60,40 @@ func marshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 		connectRequest = append(connectRequest, paramValue...)
 	}
 	return connectRequest
+}
+
+func MarshalResponse(resp domain.TenantAppResponse) []byte {
+	var respBytes []byte
+	respBytes = append(respBytes, resp.RequestType)
+	respBytes = append(respBytes, resp.RespCode)
+	respBytes = append(respBytes, getLengthInBytes(int(resp.ParamLength))...)
+	for _, paramValue := range resp.Elements {
+		respBytes = append(respBytes, paramValue.Type)
+		respBytes = append(respBytes, getLengthInBytes(int(paramValue.Length))...)
+		respBytes = append(respBytes, paramValue.Payload...)
+	}
+
+	return respBytes
+}
+
+func UnmarshalRequest(req []byte) domain.TenantAppRequest {
+	var tar domain.TenantAppRequest
+	// get Request Type
+	tar.RequestType = req[0]
+	// get Param Length
+	tar.ParamLength = binary.BigEndian.Uint16(req[1:3])
+	var i uint16 = 3
+	for i < tar.ParamLength+2 {
+		var te domain.TenantAppMessageElement
+		te.Type = req[i]
+		i += 1
+		te.Length = binary.BigEndian.Uint16(req[i : i+2])
+		i += 2
+		te.Payload = req[i : i+te.Length]
+		i += te.Length
+	}
+
+	return tar
 }
 
 //Responses from the Tenant App shall use the following format:
@@ -73,7 +106,7 @@ func marshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 //response_element _type: uint8: one of sgxquote (1), enclavepubkey (2)
 //response_element _length: uint16
 //Note: the format version has been omitted for simplicity.
-func unmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
+func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 	var connectResponse domain.TenantAppResponse
 
 	// read Request RequestType
@@ -81,27 +114,27 @@ func unmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 	// response code
 	connectResponse.RespCode = cast.ToUint8(msg[1])
 	if connectResponse.RespCode != constants.ResponseCodeSuccess && connectResponse.RespCode != constants.ResponseCodeFailure {
-		return &connectResponse, fmt.Errorf("client/unmarshalResponse: invalid response type: %d", connectResponse.RespCode)
+		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: invalid response type: %d", connectResponse.RespCode)
 	}
 	if connectResponse.RespCode == constants.ResponseCodeFailure {
-		return &connectResponse, fmt.Errorf("client/unmarshalResponse: Request failed")
+		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: Request failed")
 	}
 	if connectResponse.RequestType == constants.ReqTypeConnect {
 		// length of request params
 		lengthOfParams := binary.BigEndian.Uint16(msg[2:4])
 
 		currentPosition := 4 // 0 - RequestType | 1 - ResponseCode | 2,3 - LengthOfParams
-		var reList []domain.TenantAppResponseElement
+		var reList []domain.TenantAppMessageElement
 		var i uint16
 		// for each of the response elements
 		for i = 0; i < lengthOfParams; i++ {
-			var responseElement domain.TenantAppResponseElement
+			var responseElement domain.TenantAppMessageElement
 			// read the RE type
 			responseElement.Type = msg[currentPosition]
 			// validate
 			if responseElement.Type != constants.ResponseElementTypeSGXQuote &&
 				responseElement.Type != constants.ResponseElementTypeEnclavePubKey {
-				return nil, fmt.Errorf("client/unmarshalResponse: invalid response element type: %d", responseElement.Type)
+				return nil, fmt.Errorf("client/UnmarshalResponse: invalid response element type: %d", responseElement.Type)
 			}
 			currentPosition += 1 //ElementType
 			// read the RE Length
@@ -117,9 +150,8 @@ func unmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 
 		// set elements
 		connectResponse.Elements = reList
-	} else if connectResponse.RequestType != constants.ReqTypePubkeyWrappedSWK && connectResponse.RequestType != constants.ReqTypeSWKWrappedSecret  {
-		return &connectResponse, fmt.Errorf("client/unmarshalResponse: Invalid request-response type")
+	} else if connectResponse.RequestType != constants.ReqTypePubkeyWrappedSWK && connectResponse.RequestType != constants.ReqTypeSWKWrappedSecret {
+		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: Invalid request-response type")
 	}
 	return &connectResponse, nil
 }
-
