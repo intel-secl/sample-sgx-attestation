@@ -28,6 +28,7 @@ func handleConnection(c net.Conn) {
 	var resp *domain.TenantAppResponse
 
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
+	defer c.Close()
 	for {
 		rawData, err := bufio.NewReader(c).ReadBytes('\n')
 		if err != nil {
@@ -81,18 +82,17 @@ func (a *App) startServer() error {
 	port := ":" + string(c.Server.Port)
 	l, err := net.Listen("tcp4", port)
 	if err != nil {
-		errors.Wrap(err, "app:startServer() Error binding to socket port")
+		err = errors.Wrap(err, "app:startServer() Error binding to socket port")
 		return err
 	}
 
 	// dispatch tcp socket server handle routine
-	for {
-		c, err := l.Accept()
-		if err != nil {
-			fmt.Println(err)
-		}
-		go handleConnection(c)
+	conn, err := l.Accept()
+	if err != nil {
+		fmt.Println(err)
 	}
+	go handleConnection(conn)
+
 	secLog.Info(commLogMsg.ServiceStart)
 	<-stop
 
