@@ -36,7 +36,7 @@ const (
 	CaCertsDir            = ConfigDir + "ca-certs"
 	DefaultConfigFilePath = ConfigDir + "config.yml"
 	ConfigFile            = "config"
-	SgxQuotePolicyPath    = ConfigDir + "sgx-quote.txt"
+	SgxQuotePolicyPath    = ConfigDir + "sgx-quote.dat"
 )
 
 // tls constants
