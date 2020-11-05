@@ -338,7 +338,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	if !ca.Config.StandAloneMode {
 		return ca.ExtVerifier.VerifyQuote(qData)
 	} else {
-		return ca.SaVerifier.VerifyQuote(qData)
+		return ca.SaVerifier.VerifyQuote(qData, constants.CaCertsDir)
 	}
 }
 
