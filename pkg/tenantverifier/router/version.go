@@ -6,7 +6,7 @@ package router
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/intel-secl/sample-sgx-attestation/v3/controllers"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
 )
 
 func SetVersionRoutes(router *mux.Router) *mux.Router {

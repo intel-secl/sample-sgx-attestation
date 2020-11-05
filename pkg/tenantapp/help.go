@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/intel-secl/sample-sgx-attestation/v3/version"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version"
 )
 
 const helpStr = `Usage:

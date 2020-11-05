@@ -3,7 +3,7 @@ package controllers
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/intel-secl/sample-sgx-attestation/v3/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
 	"github.com/pkg/errors"
 	"intel/isecl/sqvs/v3/resource/parser"
 	"intel/isecl/sqvs/v3/resource/utils"

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/intel-secl/sample-sgx-attestation/v3/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
-	"github.com/intel-secl/sample-sgx-attestation/v3/tasks"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/tasks"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -131,74 +131,74 @@ func (a *App) Run(args []string) error {
 			a.Config.Save(constants.DefaultConfigFilePath)
 		}
 
-			if args[2] != "download_ca_cert" &&
-				args[2] != "download_cert" &&
-				args[2] != "service" &&
-				args[2] != "all" {
-				a.printUsage()
-				return errors.New("No such setup task")
-			}
+		if args[2] != "download_ca_cert" &&
+			args[2] != "download_cert" &&
+			args[2] != "service" &&
+			args[2] != "all" {
+			a.printUsage()
+			return errors.New("No such setup task")
+		}
 
-			task := strings.ToLower(args[2])
-			setupRunner := &setup.Runner{
-				Tasks: []setup.Task{
-					&tasks.Service{
-						SvcConfigPtr:        &a.Config.Service,
-						AASApiUrlPtr:        &a.Config.AASApiUrl,
-						CMSBaseURLPtr:       &a.Config.CMSBaseURL,
-						CmsTlsCertDigestPtr: &a.Config.CmsTlsCertDigest,
-						ServiceConfig: config.ServiceConfig{
-							Username: viper.GetString("service-username"),
-							Password: viper.GetString("service-password"),
-						},
-						AASApiUrl:        viper.GetString("aas-base-url"),
-						CMSBaseURL:       viper.GetString("cms-base-url"),
-						CmsTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
-						ConsoleWriter:    os.Stdout,
+		task := strings.ToLower(args[2])
+		setupRunner := &setup.Runner{
+			Tasks: []setup.Task{
+				&tasks.Service{
+					SvcConfigPtr:        &a.Config.Service,
+					AASApiUrlPtr:        &a.Config.AASApiUrl,
+					CMSBaseURLPtr:       &a.Config.CMSBaseURL,
+					CmsTlsCertDigestPtr: &a.Config.CmsTlsCertDigest,
+					ServiceConfig: config.ServiceConfig{
+						Username: viper.GetString("service-username"),
+						Password: viper.GetString("service-password"),
 					},
+					AASApiUrl:        viper.GetString("aas-base-url"),
+					CMSBaseURL:       viper.GetString("cms-base-url"),
+					CmsTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
+					ConsoleWriter:    os.Stdout,
 				},
-				AskInput: false,
-			}
-			if !a.Config.StandAloneMode {
-				setupRunner.Tasks = append(setupRunner.Tasks, &setup.Download_Ca_Cert{
-					CaCertDirPath: constants.CaCertsDir,
-					ConsoleWriter: a.consoleWriter(),
-					CmsBaseURL:    viper.GetString("cms-base-url"),
-					TrustedTlsCertDigest:   viper.GetString("cms-tls-cert-sha384"),
-				},
-					&setup.Download_Cert{
-						KeyFile:            a.Config.TLS.KeyFile,
-						CertFile:           a.Config.TLS.CertFile,
-						KeyAlgorithm:       constants.DefaultKeyAlgorithm,
-						KeyAlgorithmLength: constants.DefaultKeyLength,
-						CmsBaseURL:         a.Config.CMSBaseURL,
-						Subject: pkix.Name{
-							CommonName: a.Config.TLS.CommonName,
-						},
-						SanList:       a.Config.TLS.SANList,
-						CertType:      "TLS",
-						CaCertsDir:    constants.CaCertsDir,
-						BearerToken:   "",
-						ConsoleWriter: os.Stdout,
-					})
-			} else {
-				setupRunner.Tasks = append(setupRunner.Tasks, &tasks.Tls{
-					StandAloneMode: a.Config.StandAloneMode,
-					CommonName:     a.Config.TLS.CommonName,
-					Validity:       constants.DefaultSelfSignedCertValidityYears,
-					ConsoleWriter:  a.consoleWriter(),
+			},
+			AskInput: false,
+		}
+		if !a.Config.StandAloneMode {
+			setupRunner.Tasks = append(setupRunner.Tasks, &setup.Download_Ca_Cert{
+				CaCertDirPath:        constants.CaCertsDir,
+				ConsoleWriter:        a.consoleWriter(),
+				CmsBaseURL:           viper.GetString("cms-base-url"),
+				TrustedTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
+			},
+				&setup.Download_Cert{
+					KeyFile:            a.Config.TLS.KeyFile,
+					CertFile:           a.Config.TLS.CertFile,
+					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
+					KeyAlgorithmLength: constants.DefaultKeyLength,
+					CmsBaseURL:         a.Config.CMSBaseURL,
+					Subject: pkix.Name{
+						CommonName: a.Config.TLS.CommonName,
+					},
+					SanList:       a.Config.TLS.SANList,
+					CertType:      "TLS",
+					CaCertsDir:    constants.CaCertsDir,
+					BearerToken:   "",
+					ConsoleWriter: os.Stdout,
 				})
-			}
-			var err error
-			if task == "all" {
-				err = setupRunner.RunTasks()
-			} else {
-				err = setupRunner.RunTasks(task)
-			}
-			if err != nil {
-				fmt.Println("Error running setup: ", err)
-				return errors.Wrap(err, "app:Run() Error running setup")
-			}
+		} else {
+			setupRunner.Tasks = append(setupRunner.Tasks, &tasks.Tls{
+				StandAloneMode: a.Config.StandAloneMode,
+				CommonName:     a.Config.TLS.CommonName,
+				Validity:       constants.DefaultSelfSignedCertValidityYears,
+				ConsoleWriter:  a.consoleWriter(),
+			})
+		}
+		var err error
+		if task == "all" {
+			err = setupRunner.RunTasks()
+		} else {
+			err = setupRunner.RunTasks(task)
+		}
+		if err != nil {
+			fmt.Println("Error running setup: ", err)
+			return errors.Wrap(err, "app:Run() Error running setup")
+		}
 	}
 	return nil
 }

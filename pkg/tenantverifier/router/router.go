@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/intel-secl/sample-sgx-attestation/v3/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/crypt"
 	"intel/isecl/lib/common/v3/log"

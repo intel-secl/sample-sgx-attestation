@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gorilla/handlers"
-	"github.com/intel-secl/sample-sgx-attestation/v3/router"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/router"
 
 	stdlog "log"
 

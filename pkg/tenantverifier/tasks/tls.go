@@ -9,7 +9,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/crypt"
 	"intel/isecl/lib/common/v3/setup"
@@ -24,7 +24,7 @@ type Tls struct {
 	Validity       int
 
 	ConsoleWriter io.Writer
-	commandName string
+	commandName   string
 }
 
 func (t *Tls) Run(c setup.Context) error {
@@ -42,14 +42,14 @@ func (t *Tls) Run(c setup.Context) error {
 		}
 		tlsTemplate := x509.Certificate{
 			Subject: pkix.Name{
-				CommonName:   t.CommonName,
+				CommonName: t.CommonName,
 			},
 			SerialNumber: big.NewInt(0),
 			Issuer: pkix.Name{
 				CommonName: t.CommonName,
 			},
 			NotBefore: time.Now(),
-			NotAfter: time.Now().AddDate(t.Validity, 0, 0),
+			NotAfter:  time.Now().AddDate(t.Validity, 0, 0),
 
 			KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageContentCommitment,
 			BasicConstraintsValid: true,

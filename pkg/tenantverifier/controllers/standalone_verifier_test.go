@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"encoding/base64"
-	"github.com/intel-secl/sample-sgx-attestation/v3/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
