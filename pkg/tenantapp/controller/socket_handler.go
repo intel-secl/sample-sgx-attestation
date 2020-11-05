@@ -5,16 +5,14 @@
 package controller
 
 import (
-	"github.com/intel-secl/sample-sgx-attestation/v3/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/domain"
 	"github.com/pkg/errors"
+	"io/ioutil"
 )
 
 type SocketHandler struct {
-	Port    string
-	Address string
-	Config  *config.Configuration
+	SgxQuotePath string
 }
 
 func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
@@ -42,6 +40,24 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 	if username != constants.TenantUsername || password != constants.TenantPassword {
 		resp.RespCode = constants.ResponseCodeFailure
 		err = errors.New("controller/socket_handler:HandleConnect Invalid credentials")
+	}
+
+	// return the preset quote from file
+	qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)
+
+	if err != nil {
+		resp.RespCode = constants.ResponseCodeFailure
+		err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant App Quote")
+	} else {
+		resp.RespCode = constants.ResponseCodeSuccess
+		resp.Elements = []domain.TenantAppMessageElement{
+			{
+				Type:    constants.ResponseElementTypeSGXQuote,
+				Length:  uint16(len(qBytes)),
+				Payload: qBytes,
+			},
+		}
+		resp.ParamLength = uint16(len(resp.Elements))
 	}
 
 	return &resp, err
