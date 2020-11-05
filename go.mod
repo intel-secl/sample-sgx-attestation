@@ -17,7 +17,7 @@ replace intel/isecl/lib/common/v3 => gitlab.devtools.intel.com/sst/isecl/lib/com
 
 replace github.com/intel-secl/intel-secl/v3 => gitlab.devtools.intel.com/sst/isecl/intel-secl.git/v3 v3.2/develop
 
-replace intel/isecl/sqvs/v3 => gitlab.devtools.intel.com/sst/isecl/sgx-verification-service.git/v3 v3.2/develop
+replace intel/isecl/sqvs/v3 => gitlab.devtools.intel.com/sst/isecl/sgx-verification-service.git/v3 ISECL-12420-TemoraryFix
 
 replace intel/isecl/lib/clients/v3 => gitlab.devtools.intel.com/sst/isecl/lib/clients.git/v3 v3.2/develop
 
