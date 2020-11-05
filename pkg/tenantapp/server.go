@@ -35,7 +35,9 @@ func handleConnection(c net.Conn) {
 			return
 		}
 
-		sh := controller.SocketHandler{}
+		sh := controller.SocketHandler{
+			SgxQuotePath: constants.SgxQuotePolicyPath,
+		}
 
 		taRequest := controllers.UnmarshalRequest(rawData)
 
@@ -54,7 +56,6 @@ func handleConnection(c net.Conn) {
 		c.Write(controllers.MarshalResponse(*resp))
 		c.Write([]byte(constants.EndLine))
 	}
-	c.Close()
 }
 
 func (a *App) startServer() error {
