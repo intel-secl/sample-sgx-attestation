@@ -17,7 +17,7 @@ type StandaloneVerifier struct {
 	Config *config.Configuration
 }
 
-func (ev StandaloneVerifier) VerifyQuote(quoteData string) error {
+func (ev StandaloneVerifier) VerifyQuote(quoteData string, jwtCertPath string) error {
 	// for standalone mode, pass quote to the SQVS stub
 	parsedBlob := parser.ParseSkcQuoteBlob(quoteData)
 	if parsedBlob == nil {
@@ -25,7 +25,7 @@ func (ev StandaloneVerifier) VerifyQuote(quoteData string) error {
 	}
 
 	if parsedBlob.GetQuoteType() == parser.QuoteTypeEcdsa {
-		return sgxEcdsaQuoteVerify(parsedBlob, ev.Config)
+		return sgxEcdsaQuoteVerify(parsedBlob, ev.Config, jwtCertPath)
 	} else if parsedBlob.GetQuoteType() == parser.QuoteTypeSw {
 		return swQuoteVerify(parsedBlob, ev.Config)
 	} else {
@@ -44,7 +44,7 @@ func swQuoteVerify(skcBlobParser *parser.SkcBlobParsed, conf *config.Configurati
 	return nil
 }
 
-func sgxEcdsaQuoteVerify(skcBlobParser *parser.SkcBlobParsed, conf *config.Configuration) error {
+func sgxEcdsaQuoteVerify(skcBlobParser *parser.SkcBlobParsed, conf *config.Configuration, jwtCertsPath string) error {
 	if len(skcBlobParser.GetQuoteBlob()) == 0 {
 		return &resourceError{Message: "invalid sgx ecdsa quote", StatusCode: http.StatusBadRequest}
 	}
@@ -74,7 +74,7 @@ func sgxEcdsaQuoteVerify(skcBlobParser *parser.SkcBlobParsed, conf *config.Confi
 			StatusCode: http.StatusBadRequest}
 	}
 
-	certObj := parser.NewPCKCertObj(pckCertBytes)
+	certObj := parser.NewPCKCertObj(pckCertBytes, jwtCertsPath)
 	if certObj == nil {
 		return &resourceError{Message: "Invalid PCK Certificate Buffer", StatusCode: http.StatusBadRequest}
 	}
