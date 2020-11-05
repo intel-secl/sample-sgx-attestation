@@ -7,6 +7,15 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 .PHONY: installer test all clean
 
 sgx-app-verifier:
+	GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
+
+installer: sgx-app-verifier
+	cp build/linux/sgx-app-verifier.service out/sgx-app-verifier.service
+	cp build/linux/install.sh out/install.sh && chmod +x out/install.sh
+	makeself out out/sgx-app-verifier-$(VERSION).bin "sgx-app-verifier $(VERSION)" ./install.sh
+	rm -rf installer
+
+sgx-tenant-service:
 	GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
 
 installer: sgx-app-verifier
