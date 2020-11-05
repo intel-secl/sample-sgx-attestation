@@ -13,40 +13,14 @@ import (
 )
 
 type Configuration struct {
-	StandAloneMode    bool          `yaml:"stand-alone-mode" mapstructure:"stand-alone-mode"`
-	Service           ServiceConfig `yaml:"service" mapstructure:"service"`
-	TLS               TLSCertConfig `yaml:"tls" mapstructure:"tls"`
-	Server            ServerConfig  `yaml:"server" mapstructure:"server"`
-	Log               LogConfig     `yaml:"log" mapstructure:"log"`
-	TrustedRootCAPath string        `yaml:"trusted-root-ca-path" mapstructure:"trusted-root-ca-path"`
+	StandAloneMode bool      `yaml:"stand-alone-mode" mapstructure:"stand-alone-mode"`
+	Log            LogConfig `yaml:"log" mapstructure:"log"`
 }
 
 type LogConfig struct {
 	MaxLength    int    `yaml:"max-length" mapstructure:"max-length"`
 	EnableStdout bool   `yaml:"enable-stdout" mapstructure:"enable-stdout"`
 	Level        string `yaml:"level" mapstructure:"level"`
-}
-
-type ServerConfig struct {
-	Port int `yaml:"port" mapstructure:"port"`
-
-	ReadTimeout       time.Duration `yaml:"read-timeout" mapstructure:"read-timeout"`
-	ReadHeaderTimeout time.Duration `yaml:"read-header-timeout" mapstructure:"read-header-timeout"`
-	WriteTimeout      time.Duration `yaml:"write-timeout" mapstructure:"write-timeout"`
-	IdleTimeout       time.Duration `yaml:"idle-timeout" mapstructure:"idle-timeout"`
-	MaxHeaderBytes    int           `yaml:"max-header-bytes" mapstructure:"max-header-bytes"`
-}
-
-type TLSCertConfig struct {
-	CertFile   string `yaml:"cert-file" mapstructure:"cert-file"`
-	KeyFile    string `yaml:"key-file" mapstructure:"key-file"`
-	CommonName string `yaml:"common-name" mapstructure:"common-name"`
-	SANList    string `yaml:"san-list" mapstructure:"san-list"`
-}
-
-type ServiceConfig struct {
-	Username string `yaml:"service-username" mapstructure:"service-username"`
-	Password string `yaml:"service-password" mapstructure:"service-password"`
 }
 
 // this function sets the configure file name and type
