@@ -21,6 +21,7 @@ import (
 	"intel/isecl/sqvs/v3/resource/parser"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -116,11 +117,11 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			defaultLog.Printf("Error while wrapping SWK by Tenant enclave ublic key")
 			return false
 		}
-		defaultLog.Printf("Wrappped SWK by Tenant Enclave Public Key")
+		defaultLog.Printf("Wrapped SWK by Tenant Enclave Public Key")
 
 		defaultLog.Printf("Forming request to send Wrapped SWK to Tenant App")
 		params = map[uint8][]byte{
-			constants.ParamTypePubkeyWrappedSwk: pubkeyWrappedSWK, //PubkeyWrappedSWK
+			constants.ParamTypePubkeyWrappedSwk: pubkeyWrappedSWK,
 		}
 		wrappedSWKRequest := MarshalRequest(constants.ReqTypePubkeyWrappedSWK, params)
 
@@ -283,12 +284,28 @@ func generateSWK() ([]byte, error) {
 	return keyBytes, nil
 }
 
+// verifySgxQuote verifies the quote
 func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Entering")
 	defer defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Leaving")
 
 	// convert byte array to string
 	qData := string(quote)
+
+	defaultLog.Printf("Standalone mode is set to %s", strconv.FormatBool(ca.Config.StandAloneMode))
+	// based on the operation mode - standalone or non-standalone mode
+	if !ca.Config.StandAloneMode {
+		// call goes to SQVS
+		defaultLog.Printf("Calling out to SQVS - ExternalVerifier")
+		ca.ExtVerifier.VerifyQuote(qData)
+	} else {
+		// call is handled by stub
+		defaultLog.Printf("Calling out to SQVS - StandaloneVerifier")
+		ca.SaVerifier.VerifyQuote(qData)
+	}
+
+	defaultLog.Printf("Post extended quote verification - "+
+		"checking against quote policy stored in ", ca.SgxQuotePolicyPath)
 
 	// load quote policy from path
 	qpRaw, err := ioutil.ReadFile(ca.SgxQuotePolicyPath)
@@ -316,6 +333,9 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 		}
 	}
 
+	defaultLog.Printf("Quote policy has values MREnclaveField = %s | MRSignerField = %s | CpuSvnField = %s",
+		mreValue, mrSignerValue, cpusvnValue)
+
 	// compare against hardcoded SGX quote policy
 	parsedQBlob := parser.ParseEcdsaQuoteBlob(qpRaw)
 	if parsedQBlob != nil {
@@ -324,22 +344,21 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 
 	// verify against the quote policy
 	if fmt.Sprintf("%02x", parsedQBlob.Header.ReportBody.MrEnclave) != mreValue {
-		return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
+		err = errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
 	}
 	if fmt.Sprintf("%02x", parsedQBlob.Header.ReportBody.CpuSvn) != cpusvnValue {
-		return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
+		err = errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
 	}
 	if fmt.Sprintf("%02x", parsedQBlob.GetQeReportMrSigner()) != mrSignerValue {
-		return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
+		err = errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
 	}
 
-	// based on the operation mode - standalone or non-standalone mode
-	// either reach out to SQVS
-	if !ca.Config.StandAloneMode {
-		return ca.ExtVerifier.VerifyQuote(qData)
-	} else {
-		return ca.SaVerifier.VerifyQuote(qData, constants.CaCertsDir)
+	if err != nil {
+		defaultLog.Printf("Quote policy has values MREnclaveField = %s | MRSignerField = %s | CpuSvnField = %s",
+			mreValue, mrSignerValue, cpusvnValue)
 	}
+
+	return err
 }
 
 func GetLengthInBytes(length int) []byte {

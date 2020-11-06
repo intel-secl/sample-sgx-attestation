@@ -19,6 +19,7 @@ type ExternalVerifier struct {
 	CaCertsDir string
 }
 
+// VerifyQuote implements the Verifier interface
 func (ev ExternalVerifier) VerifyQuote(quoteData string) error {
 	url := ev.Config.SqvsUrl + constants.VerifyQuote
 

@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	commLog "intel/isecl/lib/common/v3/log"
@@ -79,7 +80,7 @@ func (a *App) startServer() error {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	// check if socket can be opened up
-	port := ":" + string(c.Server.Port)
+	port := ":" + strconv.Itoa(c.Server.Port)
 	l, err := net.Listen("tcp4", port)
 	if err != nil {
 		err = errors.Wrap(err, "app:startServer() Error binding to socket port")
