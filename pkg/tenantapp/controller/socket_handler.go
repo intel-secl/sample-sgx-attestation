@@ -4,12 +4,10 @@
  */
 package controller
 
-// #cgo LDFLAGS: -lAPP_FUN
-// #cgo CFLAGS: -I/opt/intel/sgxsdk/include
+// #cgo LDFLAGS: -LAppFunc
+// #cgo CFLAGS: -I /opt/intel/sgxsdk/include
 // #include "App_Func.h"
 /*
-#include <stdlib.h>
-#include <stdio.h>
 static void* allocArgv(int argc) {
     return malloc(sizeof(char *) * argc);
 }
@@ -32,7 +30,6 @@ import (
 	"unsafe"
 )
 
-var _ C.SGX_CDECL
 var appConfig *config.Configuration
 var defaultLog = log.GetDefaultLogger()
 
@@ -51,7 +48,7 @@ func init() {
 	}
 
 	// initialize enclave
-	_ = C.init(C.bool(appConfig.StandAloneMode), unsafe.Pointer(c_argv))
+	C.init(C.bool(appConfig.StandAloneMode), unsafe.Pointer(c_argv))
 }
 
 type SocketHandler struct {
@@ -133,7 +130,7 @@ func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*do
 
 		defaultLog.Printf("Length of the wrapped SWK is %d", len(pubKeyWrappedSwk))
 		// ideally we should be passing the wrapped key here
-		result := bool(C.unwrap_SWK())
+		result := C.unwrap_SWK()
 
 		// construct the response
 		if result {
