@@ -5,6 +5,7 @@
 package controller
 
 // #cgo LDFLAGS: -lAPP_FUN
+// #cgo CFLAGS: -I/opt/intel/sgxsdk/include
 // #include "App_Func.h"
 /*
 #include <stdlib.h>
