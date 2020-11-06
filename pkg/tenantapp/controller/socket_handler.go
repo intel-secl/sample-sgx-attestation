@@ -4,20 +4,9 @@
  */
 package controller
 
-// #cgo LDFLAGS: -LAppFunc
-// #cgo CFLAGS: -I /opt/intel/sgxsdk/include
+// #cgo CFLAGS: -I /opt/intel/sgxsdk/include 
+// #cgo LDFLAGS: -L /usr/lib64/libapp.so -l app
 // #include "App_Func.h"
-/*
-static void* allocArgv(int argc) {
-    return malloc(sizeof(char *) * argc);
-}
-static void printArgs(int argc, char** argv) {
-    int i;
-    for (i = 0; i < argc; i++) {
-        printf("%s\n", argv[i]);
-    }
-}
-*/
 import "C"
 
 import (
@@ -27,28 +16,18 @@ import (
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/log"
 	"os"
-	"unsafe"
 )
 
 var appConfig *config.Configuration
 var defaultLog = log.GetDefaultLogger()
+var enclaveInitStatus int
 
 func init() {
 	appConfig, _ = config.LoadConfiguration()
 
-	// pass args to the main method here
-	argv := os.Args
-	argc := C.int(len(argv))
-	c_argv := (*[0xfff]*C.char)(C.allocArgv(argc))
-	defer C.free(unsafe.Pointer(c_argv))
-
-	for i, arg := range argv {
-		c_argv[i] = C.CString(arg)
-		defer C.free(unsafe.Pointer(c_argv[i]))
-	}
 
 	// initialize enclave
-	C.init(C.bool(appConfig.StandAloneMode), unsafe.Pointer(c_argv))
+	enclaveInitStatus = C.init(C.bool(appConfig.StandAloneMode))
 }
 
 type SocketHandler struct {
