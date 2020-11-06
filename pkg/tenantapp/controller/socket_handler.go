@@ -4,8 +4,12 @@
  */
 package controller
 
-// #cgo CFLAGS: -I /opt/intel/sgxsdk/include 
-// #cgo LDFLAGS: -L /usr/lib64/libapp.so -l app
+// #cgo CFLAGS: -I /opt/intel/sgxsdk/include
+// #cgo LDFLAGS: -L /usr/lib64 -l app
+// #cgo LDFLAGS: -L /usr/lib64 -l sgx_qe3_logic
+// #cgo LDFLAGS: -L /usr/lib64 -l sgx_pce_logic
+// #cgo LDFLAGS: -L /usr/lib64 -l sgx_dcap_ql
+// #cgo LDFLAGS: -L /opt/intel/sgxsdk/lib64/ -l sgx_urts
 // #include "App_Func.h"
 import "C"
 
@@ -62,7 +66,7 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 	}
 
 	defaultLog.Print("Getting quote from the Tenant App Enclave")
-	qBytes := C.get_SGX_Quote()
+	qBytes := C.get_SGX_Quote(&C.int(1))
 
 	// return the preset quote from file
 	//qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)
