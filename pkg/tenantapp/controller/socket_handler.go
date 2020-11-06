@@ -4,7 +4,7 @@
  */
 package controller
 
-// #cgo CFLAGS: -I /opt/intel/sgxsdk/include
+// #cgo CFLAGS: -I /opt/intel/sgxsdk/include -fPIC
 // #cgo LDFLAGS: -L /usr/lib64 -l app
 // #cgo LDFLAGS: -L /usr/lib64 -l sgx_qe3_logic
 // #cgo LDFLAGS: -L /usr/lib64 -l sgx_pce_logic
@@ -19,16 +19,15 @@ import (
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/log"
-	"os"
+	"unsafe"
 )
 
 var appConfig *config.Configuration
 var defaultLog = log.GetDefaultLogger()
-var enclaveInitStatus int
+var enclaveInitStatus C.int
 
 func init() {
 	appConfig, _ = config.LoadConfiguration()
-
 
 	// initialize enclave
 	enclaveInitStatus = C.init(C.bool(appConfig.StandAloneMode))
@@ -66,7 +65,11 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 	}
 
 	defaultLog.Print("Getting quote from the Tenant App Enclave")
-	qBytes := C.get_SGX_Quote(&C.int(1))
+
+	var cint C.int
+	cint = C.int(1)
+	var qBytes []uint8
+	qBytes = C.GoBytes(unsafe.Pointer(C.get_SGX_Quote(&cint)[0]), C.int(unsafe.Sizeof(C.get_SGX_Quote(&cint))))
 
 	// return the preset quote from file
 	//qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)
@@ -113,7 +116,8 @@ func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*do
 
 		defaultLog.Printf("Length of the wrapped SWK is %d", len(pubKeyWrappedSwk))
 		// ideally we should be passing the wrapped key here
-		result := C.unwrap_SWK()
+		C.unwrap_SWK()
+		result := true
 
 		// construct the response
 		if result {
@@ -149,8 +153,10 @@ func (sh SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*do
 		}
 
 		defaultLog.Printf("Length of the wrapped secret is %d", len(swkWrappedSecret))
+
 		// ideally we should be passing the wrapped secret here
-		result := bool(C.unwrap_Secret())
+		C.unwrap_Secret()
+		result := true
 
 		// construct the response
 		if result {
