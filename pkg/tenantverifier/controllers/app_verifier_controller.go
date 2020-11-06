@@ -305,7 +305,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	}
 
 	defaultLog.Printf("Post extended quote verification - "+
-		"checking against quote policy stored in ", ca.SgxQuotePolicyPath)
+		"checking against quote policy stored in %s", ca.SgxQuotePolicyPath)
 
 	// load quote policy from path
 	qpRaw, err := ioutil.ReadFile(ca.SgxQuotePolicyPath)
