@@ -54,68 +54,25 @@
 # define TOKEN_FILENAME   "enclave.token"
 # define ENCLAVE_FILENAME "enclave.signed.so"
 
-/*#define REF_N_SIZE_IN_BYTES    384
-#define REF_E_SIZE_IN_BYTES    4
-#define REF_D_SIZE_IN_BYTES    384
-#define REF_P_SIZE_IN_BYTES    192
-#define REF_Q_SIZE_IN_BYTES    192
-#define REF_DMP1_SIZE_IN_BYTES 192
-#define REF_DMQ1_SIZE_IN_BYTES 192
-#define REF_IQMP_SIZE_IN_BYTES 192
-
-#define REF_N_SIZE_IN_UINT     REF_N_SIZE_IN_BYTES/sizeof(unsigned int)
-#define REF_E_SIZE_IN_UINT     REF_E_SIZE_IN_BYTES/sizeof(unsigned int)
-#define REF_D_SIZE_IN_UINT     REF_D_SIZE_IN_BYTES/sizeof(unsigned int)
-#define REF_P_SIZE_IN_UINT     REF_P_SIZE_IN_BYTES/sizeof(unsigned int)
-#define REF_Q_SIZE_IN_UINT     REF_Q_SIZE_IN_BYTES/sizeof(unsigned int)
-#define REF_DMP1_SIZE_IN_UINT  REF_DMP1_SIZE_IN_BYTES/sizeof(unsigned int)
-#define REF_DMQ1_SIZE_IN_UINT  REF_DMQ1_SIZE_IN_BYTES/sizeof(unsigned int)
-#define REF_IQMP_SIZE_IN_UINT  REF_IQMP_SIZE_IN_BYTES/sizeof(unsigned int)
-
-
-typedef struct _ref_rsa_params_t {
-    unsigned int n[REF_N_SIZE_IN_UINT];
-    unsigned int e[REF_E_SIZE_IN_UINT];
-    unsigned int d[REF_D_SIZE_IN_UINT];
-    unsigned int p[REF_P_SIZE_IN_UINT];
-    unsigned int q[REF_Q_SIZE_IN_UINT];
-    unsigned int dmp1[REF_DMP1_SIZE_IN_UINT];
-    unsigned int dmq1[REF_DMQ1_SIZE_IN_UINT];
-    unsigned int iqmp[REF_IQMP_SIZE_IN_UINT];
-}ref_rsa_params_t;*/
-
 extern sgx_enclave_id_t global_eid;    /* global enclave id */
 
 void print_error_message(sgx_status_t ret);
 int initialize_enclave(void);
 
-
+#if defined(__cplusplus)
+extern "C" {
+#endif
 int get_Key();
 uint8_t* get_SGX_Quote(int* x);
 void unwrap_SWK();
 void unwrap_Secret();
 
 int SGX_CDECL init(bool argc);
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-//void ocall_print_string(const char *str);
-//void ocall_print_string1(const char *str);
-
-/*void edger8r_array_attributes(void);
-void edger8r_type_attributes(void);
-void edger8r_pointer_attributes(void);
-void edger8r_function_attributes(void);
-
-void ecall_libc_functions(void);
-void ecall_libcxx_functions(void);
-void ecall_thread_functions(void);*/
+int destroy_Enclave();
+//#endif
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif /* !_APP_FUN_H_ */
-
+#endif /* !_APP_FUNC_H_ */
