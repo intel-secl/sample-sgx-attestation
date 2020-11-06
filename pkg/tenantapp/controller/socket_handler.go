@@ -4,12 +4,54 @@
  */
 package controller
 
+// #cgo LDFLAGS: -lAPP_FUN
+// #include "App_Func.h"
+/*
+#include <stdlib.h>
+#include <stdio.h>
+static void* allocArgv(int argc) {
+    return malloc(sizeof(char *) * argc);
+}
+static void printArgs(int argc, char** argv) {
+    int i;
+    for (i = 0; i < argc; i++) {
+        printf("%s\n", argv[i]);
+    }
+}
+*/
+import "C"
+
 import (
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/pkg/errors"
-	"io/ioutil"
+	"intel/isecl/lib/common/v3/log"
+	"os"
+	"unsafe"
 )
+
+var _ C.SGX_CDECL
+var appConfig *config.Configuration
+var defaultLog = log.GetDefaultLogger()
+
+func init() {
+	appConfig, _ = config.LoadConfiguration()
+
+	// pass args to the main method here
+	argv := os.Args
+	argc := C.int(len(argv))
+	c_argv := (*[0xfff]*C.char)(C.allocArgv(argc))
+	defer C.free(unsafe.Pointer(c_argv))
+
+	for i, arg := range argv {
+		c_argv[i] = C.CString(arg)
+		defer C.free(unsafe.Pointer(c_argv[i]))
+	}
+
+	// initialize enclave
+	_ = C.init(C.bool(appConfig.StandAloneMode), unsafe.Pointer(c_argv))
+}
 
 type SocketHandler struct {
 	SgxQuotePath string
@@ -42,10 +84,14 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 		err = errors.New("controller/socket_handler:HandleConnect Invalid credentials")
 	}
 
-	// return the preset quote from file
-	qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)
+	defaultLog.Print("Getting quote from the Tenant App Enclave")
+	qBytes := C.get_SGX_Quote()
 
-	if err != nil {
+	// return the preset quote from file
+	//qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)
+
+	defaultLog.Printf("Fetched quote is of length %d", len(qBytes))
+	if qBytes == nil {
 		resp.RespCode = constants.ResponseCodeFailure
 		err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant App Quote")
 	} else {
@@ -63,6 +109,7 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 	return &resp, err
 }
 
+// HandlePubkeyWrappedSWK receives the SWK used for wrapping public key
 func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
 	var resp domain.TenantAppResponse
 	var err error
@@ -83,26 +130,23 @@ func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*do
 			}
 		}
 
-		// pass this to the tenant app
-		passToTenantApp(pubKeyWrappedSwk)
+		defaultLog.Printf("Length of the wrapped SWK is %d", len(pubKeyWrappedSwk))
+		// ideally we should be passing the wrapped key here
+		result := bool(C.unwrap_SWK())
 
 		// construct the response
-		respPayload := []byte("")
-		resp.RespCode = constants.ResponseCodeSuccess
-		resp.Elements = []domain.TenantAppMessageElement{
-			{
-				Type:    constants.ParamTypePubkeyWrappedSwk,
-				Length:  uint16(len(respPayload)),
-				Payload: respPayload,
-			},
+		if result {
+			resp.RespCode = constants.ResponseCodeSuccess
+		} else {
+			resp.RespCode = constants.ResponseCodeFailure
 		}
-		resp.ParamLength = uint16(len(resp.Elements))
 	}
 
 	return &resp, err
 
 }
 
+// HandleSWKWrappedSecret takes the wrapped secret from verifier app and unwraps it in the enclave
 func (sh SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
 	var resp domain.TenantAppResponse
 	var err error
@@ -123,26 +167,17 @@ func (sh SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*do
 			}
 		}
 
-		// pass this to the tenant app
-		passToTenantApp(swkWrappedSecret)
+		defaultLog.Printf("Length of the wrapped secret is %d", len(swkWrappedSecret))
+		// ideally we should be passing the wrapped secret here
+		result := bool(C.unwrap_Secret())
 
 		// construct the response
-		respPayload := []byte("")
-		resp.RespCode = constants.ResponseCodeSuccess
-		resp.Elements = []domain.TenantAppMessageElement{
-			{
-				Type:    constants.ParamTypePubkeyWrappedSwk,
-				Length:  uint16(len(respPayload)),
-				Payload: respPayload,
-			},
+		if result {
+			resp.RespCode = constants.ResponseCodeSuccess
+		} else {
+			resp.RespCode = constants.ResponseCodeFailure
 		}
-		resp.ParamLength = uint16(len(resp.Elements))
 	}
 
 	return &resp, err
-}
-
-func passToTenantApp(key string) error {
-	// TODO: Need to forward the request to the tenant app - via the Go-C bridge
-	return nil
 }
