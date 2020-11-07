@@ -7,7 +7,7 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 .PHONY: clean verifier tenantapp test
 
 verifier:
-	cd pkg/tenantverifier && env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
+	cd pkg/tenantverifier && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
 
 verifier-installer: verifier
 	mkdir -p installer out/
@@ -18,7 +18,7 @@ verifier-installer: verifier
 	rm -rf installer
 
 tenantapp:
-	cd pkg/tenantapp && envGOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.GitHash=$(GITCOMMIT)" -o out/sgx-tenant-app
+	cd pkg/tenantapp && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.GitHash=$(GITCOMMIT)" -o out/sgx-tenant-app
 
 tenantapp-installer: tenantapp
 	mkdir -p installer out/
