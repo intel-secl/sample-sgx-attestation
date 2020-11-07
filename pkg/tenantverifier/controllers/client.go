@@ -7,7 +7,7 @@ package controllers
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/spf13/cast"
 	"log"

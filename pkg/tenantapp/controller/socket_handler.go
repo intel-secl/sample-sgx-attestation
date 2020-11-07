@@ -14,8 +14,8 @@ package controller
 import "C"
 
 import (
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/log"
@@ -69,11 +69,10 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 	var cint C.int
 	cint = C.int(1)
 	var qBytes []uint8
-        var qPtr *C.u_int8_t
-        qPtr = C.get_SGX_Quote(&cint)
-        bufferSize := C.int(unsafe.Sizeof(qPtr))
-        qBytes = (*[1 << 30]byte)(unsafe.Pointer(C.get_SGX_Quote(&cint)))[bufferSize:bufferSize]
-
+	var qPtr *C.u_int8_t
+	qPtr = C.get_SGX_Quote(&cint)
+	bufferSize := C.int(unsafe.Sizeof(qPtr))
+	qBytes = (*[1 << 30]byte)(unsafe.Pointer(C.get_SGX_Quote(&cint)))[bufferSize:bufferSize]
 
 	// return the preset quote from file
 	//qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)

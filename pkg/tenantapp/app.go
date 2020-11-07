@@ -13,8 +13,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/tasks"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

@@ -5,15 +5,23 @@
 package config
 
 import (
+	"os"
+	"time"
+
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 type Configuration struct {
 	StandAloneMode    bool          `yaml:"stand-alone-mode" mapstructure:"stand-alone-mode"`
+	TenantServiceHost string        `yaml:"tenant-service-host" mapstructure:"tenant-service-host"`
+	TenantServicePort int           `yaml:"tenant-service-port" mapstructure:"tenant-service-port"`
+	AASApiUrl         string        `yaml:"aas-base-url" mapstructure:"aas-base-url"`
+	CMSBaseURL        string        `yaml:"cms-base-url" mapstructure:"cms-base-url"`
+	CmsTlsCertDigest  string        `yaml:"cms-tls-cert-sha384" mapstructure:"cms-tls-cert-sha384"`
+	SqvsUrl           string        `yaml:"sqvs-url" mapstructure:"sqvs-url"`
 	Service           ServiceConfig `yaml:"service" mapstructure:"service"`
 	TLS               TLSCertConfig `yaml:"tls" mapstructure:"tls"`
 	Server            ServerConfig  `yaml:"server" mapstructure:"server"`
@@ -28,8 +36,6 @@ type LogConfig struct {
 }
 
 type ServerConfig struct {
-	Port int `yaml:"port" mapstructure:"port"`
-
 	ReadTimeout       time.Duration `yaml:"read-timeout" mapstructure:"read-timeout"`
 	ReadHeaderTimeout time.Duration `yaml:"read-header-timeout" mapstructure:"read-header-timeout"`
 	WriteTimeout      time.Duration `yaml:"write-timeout" mapstructure:"write-timeout"`
@@ -44,6 +50,7 @@ type TLSCertConfig struct {
 	SANList    string `yaml:"san-list" mapstructure:"san-list"`
 }
 
+// For use when the verification service exposes an web endpoint
 type ServiceConfig struct {
 	Username string `yaml:"service-username" mapstructure:"service-username"`
 	Password string `yaml:"service-password" mapstructure:"service-password"`
