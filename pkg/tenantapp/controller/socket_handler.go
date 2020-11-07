@@ -4,12 +4,12 @@
  */
 package controller
 
-// #cgo CFLAGS: -I /opt/intel/sgxsdk/include -fPIC
+// #cgo CFLAGS: -I /opt/intel/sgxsdk/include
 // #cgo LDFLAGS: -L /usr/lib64 -l app
 // #cgo LDFLAGS: -L /usr/lib64 -l sgx_qe3_logic
 // #cgo LDFLAGS: -L /usr/lib64 -l sgx_pce_logic
 // #cgo LDFLAGS: -L /usr/lib64 -l sgx_dcap_ql
-// #cgo LDFLAGS: -L /opt/intel/sgxsdk/lib64/ -l sgx_urts
+// #cgo LDFLAGS: -L /usr/lib64/ -l sgx_urts
 // #include "App_Func.h"
 import "C"
 
