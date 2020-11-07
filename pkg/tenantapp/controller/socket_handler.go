@@ -69,7 +69,11 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 	var cint C.int
 	cint = C.int(1)
 	var qBytes []uint8
-	qBytes = C.GoBytes(unsafe.Pointer(C.get_SGX_Quote(&cint)[0]), C.int(unsafe.Sizeof(C.get_SGX_Quote(&cint))))
+        var qPtr *C.u_int8_t
+        qPtr = C.get_SGX_Quote(&cint)
+        bufferSize := C.int(unsafe.Sizeof(qPtr))
+        qBytes = (*[1 << 30]byte)(unsafe.Pointer(C.get_SGX_Quote(&cint)))[bufferSize:bufferSize]
+
 
 	// return the preset quote from file
 	//qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)
