@@ -78,7 +78,7 @@ func (a *TenantServiceApp) StartServer() error {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	// check if socket can be opened up
-	port := ":" + strconv.Itoa(c.Server.Port)
+	port := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
 	l, err := net.Listen("tcp4", port)
 	if err != nil {
 		err = errors.Wrap(err, "app:startServer() Error binding to socket port")

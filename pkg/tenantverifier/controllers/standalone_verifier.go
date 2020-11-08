@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
 	"github.com/pkg/errors"
 	"intel/isecl/sqvs/v3/resource/parser"
 	"net/http"

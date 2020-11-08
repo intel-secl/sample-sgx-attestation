@@ -5,8 +5,8 @@
 package main
 
 import (
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
 	"github.com/spf13/viper"
 )
 
@@ -48,7 +48,6 @@ func defaultConfig() *config.Configuration {
 			Password: viper.GetString("service-password"),
 		},
 		Server: config.ServerConfig{
-			Port:              viper.GetInt("server-port"),
 			ReadTimeout:       viper.GetDuration("server-read-timeout"),
 			ReadHeaderTimeout: viper.GetDuration("server-read-header-timeout"),
 			WriteTimeout:      viper.GetDuration("server-write-timeout"),

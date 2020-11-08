@@ -14,12 +14,11 @@ const (
 	ServiceUserName = "sgx-app-verifier"
 	TenantUsername  = "tenantusername"
 	TenantPassword  = "tenantpassw0rd"
-	ApiVersion      = "/v1"
+
 	// service remove command
 	ServiceRemoveCmd           = "systemctl disable sgx-app-verifier"
 	VerifyQuote                = "/verifyQuote"
 	DefaultTenantAppListenHost = "127.0.0.1"
-	DefaultTenantAppListenPort = 999
 )
 
 // these are used only when uninstalling service
