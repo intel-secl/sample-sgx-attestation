@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package main
+package tenantapp
 
 import (
 	"bufio"
@@ -58,7 +58,7 @@ func handleConnection(c net.Conn) {
 	}
 }
 
-func (a *App) startServer() error {
+func (a *TenantServiceApp) StartServer() error {
 	defaultLog.Trace("app:startServer() Entering")
 	defer defaultLog.Trace("app:startServer() Leaving")
 
@@ -71,7 +71,7 @@ func (a *App) startServer() error {
 		return err
 	}
 
-	defaultLog.Info("Starting server")
+	defaultLog.Info("Starting TenantAppService")
 
 	// Setup signal handlers to gracefully handle termination
 	stop := make(chan os.Signal)

@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package main
+package tenantapp
 
 import (
 	"fmt"
@@ -34,15 +34,15 @@ Available Tasks for setup:
 	download_cert tls               Download CA certificate from CMS for tls
 `
 
-func (a *App) printUsage() {
+func (a *TenantServiceApp) printUsage() {
 	fmt.Fprintln(a.consoleWriter(), helpStr)
 }
 
-func (a *App) printUsageWithError(err error) {
+func (a *TenantServiceApp) printUsageWithError(err error) {
 	fmt.Fprintln(a.errorWriter(), "Application returned with error:", err.Error())
 	fmt.Fprintln(a.errorWriter(), helpStr)
 }
 
-func (a *App) printVersion() {
-	fmt.Fprintf(a.consoleWriter(), "SGX App Verifier Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
+func (a *TenantServiceApp) printVersion() {
+	fmt.Fprintf(a.consoleWriter(), "SGX TenantServiceApp Verifier Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
 }
