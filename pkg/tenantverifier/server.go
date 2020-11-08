@@ -40,11 +40,11 @@ func (a *App) startServer() error {
 		Config:    c,
 	}
 	// dispatch Tenant App service
-	go tenantApp.StartServer()
-	/*	if err != nil {
+	err := tenantApp.StartServer()
+	if err != nil {
 		defaultLog.WithError(err).Errorf("app:startServer() Error starting TenantApp")
 		return err
-	}*/
+	}
 
 	// start the quote verification
 	verifyController := controllers.AppVerifierController{

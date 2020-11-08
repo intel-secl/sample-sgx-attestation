@@ -66,10 +66,10 @@ func (a *TenantServiceApp) StartServer() error {
 	defaultLog.Info("Starting TenantAppService")
 
 	// check if socket can be opened up
-	port := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
-	l, err := net.Listen("tcp4", port)
+	listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
+	l, err := net.Listen("tcp4", listenAddr)
 	if err != nil {
-		err = errors.Wrap(err, "app:startServer() Error binding to socket port")
+		err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
 		defaultLog.Error(err)
 	}
 
