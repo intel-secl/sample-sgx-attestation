@@ -5,7 +5,6 @@
 package main
 
 import (
-	"crypto/x509/pkix"
 	"fmt"
 	"io"
 	"os"
@@ -22,7 +21,6 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	commLogInt "intel/isecl/lib/common/v3/log/setup"
-	"intel/isecl/lib/common/v3/setup"
 )
 
 var errInvalidCmd = errors.New("Invalid input after command")
@@ -41,10 +39,10 @@ type App struct {
 	ErrorWriter   io.Writer
 	LogWriter     io.Writer
 	SecLogWriter  io.Writer
-	HTTPLogWriter io.Writer
 }
 
 func (a *App) Run(args []string) error {
+	var err error
 	defer func() {
 		if err := recover(); err != nil {
 			defaultLog.Errorf("Panic occurred: %+v", err)
@@ -113,73 +111,9 @@ func (a *App) Run(args []string) error {
 		viper.AutomaticEnv()
 		if a.configuration() == nil {
 			a.Config = defaultConfig()
-			a.Config.Save(constants.DefaultConfigFilePath)
+			err = a.Config.Save(constants.DefaultConfigFilePath)
 		}
 
-		if args[2] != "download_ca_cert" &&
-			args[2] != "download_cert" &&
-			args[2] != "service" &&
-			args[2] != "all" {
-			a.printUsage()
-			return errors.New("No such setup task")
-		}
-
-		task := strings.ToLower(args[2])
-		setupRunner := &setup.Runner{
-			Tasks: []setup.Task{
-				&tasks.Service{
-					SvcConfigPtr:        &a.Config.Service,
-					AASApiUrlPtr:        &a.Config.AASApiUrl,
-					CMSBaseURLPtr:       &a.Config.CMSBaseURL,
-					CmsTlsCertDigestPtr: &a.Config.CmsTlsCertDigest,
-					ServiceConfig: config.ServiceConfig{
-						Username: viper.GetString("service-username"),
-						Password: viper.GetString("service-password"),
-					},
-					AASApiUrl:        viper.GetString("aas-base-url"),
-					CMSBaseURL:       viper.GetString("cms-base-url"),
-					CmsTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
-					ConsoleWriter:    os.Stdout,
-				},
-			},
-			AskInput: false,
-		}
-		if !a.Config.StandAloneMode {
-			setupRunner.Tasks = append(setupRunner.Tasks, &setup.Download_Ca_Cert{
-				CaCertDirPath:        constants.CaCertsDir,
-				ConsoleWriter:        a.consoleWriter(),
-				CmsBaseURL:           viper.GetString("cms-base-url"),
-				TrustedTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
-			},
-				&setup.Download_Cert{
-					KeyFile:            a.Config.TLS.KeyFile,
-					CertFile:           a.Config.TLS.CertFile,
-					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
-					KeyAlgorithmLength: constants.DefaultKeyLength,
-					CmsBaseURL:         a.Config.CMSBaseURL,
-					Subject: pkix.Name{
-						CommonName: a.Config.TLS.CommonName,
-					},
-					SanList:       a.Config.TLS.SANList,
-					CertType:      "TLS",
-					CaCertsDir:    constants.CaCertsDir,
-					BearerToken:   "",
-					ConsoleWriter: os.Stdout,
-				})
-		} else {
-			setupRunner.Tasks = append(setupRunner.Tasks, &tasks.Tls{
-				StandAloneMode: a.Config.StandAloneMode,
-				CommonName:     a.Config.TLS.CommonName,
-				Validity:       constants.DefaultSelfSignedCertValidityYears,
-				ConsoleWriter:  a.consoleWriter(),
-			})
-		}
-		var err error
-		if task == "all" {
-			err = setupRunner.RunTasks()
-		} else {
-			err = setupRunner.RunTasks(task)
-		}
 		if err != nil {
 			fmt.Println("Error running setup: ", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
@@ -212,13 +146,6 @@ func (a *App) secLogWriter() io.Writer {
 func (a *App) logWriter() io.Writer {
 	if a.LogWriter != nil {
 		return a.LogWriter
-	}
-	return os.Stderr
-}
-
-func (a *App) httpLogWriter() io.Writer {
-	if a.HTTPLogWriter != nil {
-		return a.HTTPLogWriter
 	}
 	return os.Stderr
 }
