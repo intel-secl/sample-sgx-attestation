@@ -31,7 +31,7 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 
 	// send to server
 	conn.Write(msg)
-	conn.Write([]byte(constants.StopCharacter))
+	conn.Write([]byte(constants.EndLine))
 	log.Printf("Send: %s", msg)
 
 	// read from server
