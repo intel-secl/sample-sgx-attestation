@@ -67,27 +67,30 @@ func (a *TenantServiceApp) StartServer() error {
 
 	defaultLog.Info("Starting TenantAppService")
 
-	// check if socket can be opened up
-	listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
-	l, err := net.Listen("tcp4", listenAddr)
-	if err != nil {
-		err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
-		defaultLog.Error(err)
-	}
-
-	rand.Seed(time.Now().Unix())
-
-	defer secLog.Info(commLogMsg.ServiceStop)
-	defer l.Close()
-
-	// dispatch tcp socket server handle routine
-	for {
-		conn, err := l.Accept()
+	// dispatch tcp socket server handle
+	go func() {
+		// check if socket can be opened up
+		listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
+		l, err := net.Listen("tcp4", listenAddr)
 		if err != nil {
 			err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
-			return err
+			defaultLog.Error(err)
 		}
 
-		go a.handleConnection(conn)
-	}
+		rand.Seed(time.Now().Unix())
+
+		defer secLog.Info(commLogMsg.ServiceStop)
+		defer l.Close()
+
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
+				break
+			}
+
+			go a.handleConnection(conn)
+		}
+	}()
+	return nil
 }
