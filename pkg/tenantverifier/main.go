@@ -45,11 +45,6 @@ func openLogFiles() (logFile *os.File, secLogFile *os.File, err error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("Could not parse sgx-app-verifier user gid '%s'", serviceUser.Gid)
 	}
-
-	err = os.Chown(HttpLogFile, uid, gid)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", HttpLogFile)
-	}
 	err = os.Chown(SecurityLogFile, uid, gid)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", SecurityLogFile)

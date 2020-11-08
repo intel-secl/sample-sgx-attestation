@@ -70,7 +70,6 @@ const (
 const (
 	DefaultLogEntryMaxlength = 1500
 	LogFile                  = LogDir + ServiceUserName + ".log"
-	HttpLogFile              = LogDir + ServiceUserName + "-http.log"
 	SecurityLogFile          = LogDir + ServiceUserName + "-security.log"
 )
 
