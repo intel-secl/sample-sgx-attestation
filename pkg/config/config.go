@@ -58,6 +58,7 @@ type ServiceConfig struct {
 
 // this function sets the configure file name and type
 func init() {
+	viper.AddConfigPath(constants.ConfigDir)
 	viper.SetConfigName(constants.ConfigFile)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
@@ -65,7 +66,7 @@ func init() {
 
 // config is application specific
 func LoadConfiguration() (*Configuration, error) {
-	ret := Configuration{}
+	var ret Configuration
 	// Find and read the config file
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
