@@ -13,64 +13,56 @@ import (
 	. "github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 )
 
-func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File, err error) {
+func openLogFiles() (logFile *os.File, secLogFile *os.File, err error) {
 
 	logFile, err = os.OpenFile(LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	if err = os.Chmod(LogFile, 0664); err != nil {
-		return nil, nil, nil, err
-	}
-
-	httpLogFile, err = os.OpenFile(HttpLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if err = os.Chmod(HttpLogFile, 0664); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	secLogFile, err = os.OpenFile(SecurityLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	if err = os.Chmod(SecurityLogFile, 0664); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	serviceUser, err := user.Lookup(ServiceUserName)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not find user '%s'", ServiceUserName)
+		return nil, nil, fmt.Errorf("Could not find user '%s'", ServiceUserName)
 	}
 
 	uid, err := strconv.Atoi(serviceUser.Uid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not parse sgx-app-verifier user uid '%s'", serviceUser.Uid)
+		return nil, nil, fmt.Errorf("Could not parse sgx-app-verifier user uid '%s'", serviceUser.Uid)
 	}
 
 	gid, err := strconv.Atoi(serviceUser.Gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not parse sgx-app-verifier user gid '%s'", serviceUser.Gid)
+		return nil, nil, fmt.Errorf("Could not parse sgx-app-verifier user gid '%s'", serviceUser.Gid)
 	}
 
 	err = os.Chown(HttpLogFile, uid, gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", HttpLogFile)
+		return nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", HttpLogFile)
 	}
 	err = os.Chown(SecurityLogFile, uid, gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", SecurityLogFile)
+		return nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", SecurityLogFile)
 	}
 	err = os.Chown(LogFile, uid, gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", LogFile)
+		return nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", LogFile)
 	}
 	return
 }
 
 func main() {
-	l, h, s, err := openLogFiles()
+	l, s, err := openLogFiles()
 	var app *App
 	if err != nil {
 		app = &App{
@@ -78,12 +70,10 @@ func main() {
 		}
 	} else {
 		defer l.Close()
-		defer h.Close()
 		defer s.Close()
 		app = &App{
-			LogWriter:     l,
-			HTTPLogWriter: h,
-			SecLogWriter:  s,
+			LogWriter:    l,
+			SecLogWriter: s,
 		}
 	}
 

@@ -5,12 +5,6 @@
 package tenantapp
 
 import (
-	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"syscall"
-
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/pkg/errors"
@@ -19,6 +13,8 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	commLogInt "intel/isecl/lib/common/v3/log/setup"
+	"io"
+	"os"
 )
 
 var errInvalidCmd = errors.New("Invalid input after command")
@@ -37,7 +33,6 @@ type TenantServiceApp struct {
 	ErrorWriter   io.Writer
 	LogWriter     io.Writer
 	SecLogWriter  io.Writer
-	HTTPLogWriter io.Writer
 }
 
 func (a *TenantServiceApp) Run(args []string) error {
@@ -95,13 +90,6 @@ func (a *TenantServiceApp) logWriter() io.Writer {
 	return os.Stderr
 }
 
-func (a *TenantServiceApp) httpLogWriter() io.Writer {
-	if a.HTTPLogWriter != nil {
-		return a.HTTPLogWriter
-	}
-	return os.Stderr
-}
-
 func (a *TenantServiceApp) configuration() *config.Configuration {
 	if a.Config != nil {
 		return a.Config
@@ -139,31 +127,4 @@ func (a *TenantServiceApp) configureLogs(stdOut, logFile bool) error {
 	secLog.Info(commLogMsg.LogInit)
 	defaultLog.Info(commLogMsg.LogInit)
 	return nil
-}
-
-func (a *TenantServiceApp) start() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-app-verifier"`)
-	systemctl, err := exec.LookPath("systemctl")
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-app-verifier"}, os.Environ())
-}
-
-func (a *TenantServiceApp) stop() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-app-verifier"`)
-	systemctl, err := exec.LookPath("systemctl")
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-app-verifier"}, os.Environ())
-}
-
-func (a *TenantServiceApp) status() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-app-verifier"`)
-	systemctl, err := exec.LookPath("systemctl")
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-app-verifier"}, os.Environ())
 }
