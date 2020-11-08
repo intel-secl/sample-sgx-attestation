@@ -16,9 +16,6 @@ verifier-installer: verifier
 	makeself installer out/sgx-app-verifier-$(VERSION).bin "sgx-app-verifier $(VERSION)" ./install.sh
 	rm -rf installer
 
-tenantapp:
-	cd pkg/tenantapp && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantapp/version.GitHash=$(GITCOMMIT)" -o out/sgx-tenant-app
-
 test:
 	go test ./... -coverprofile cover.out
 	go tool cover -func cover.out
