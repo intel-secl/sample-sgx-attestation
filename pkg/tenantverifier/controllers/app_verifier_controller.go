@@ -35,11 +35,11 @@ func (e resourceError) Error() string {
 }
 
 type AppVerifierController struct {
-	Address            string
-	Config             *config.Configuration
-	ExtVerifier        ExternalVerifier
-	SaVerifier         StandaloneVerifier
-	SgxQuotePolicyPath string
+	TenantAppSocketAddr string
+	Config              *config.Configuration
+	ExtVerifier         ExternalVerifier
+	SaVerifier          StandaloneVerifier
+	SgxQuotePolicyPath  string
 }
 
 type appVerifierResponse struct {
@@ -66,7 +66,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		constants.ParamTypePassword: []byte(constants.TenantPassword), //password
 	}
 	connectRequest := MarshalRequest(constants.ReqTypeConnect, params)
-	tenantAppClient := NewSgxSocketClient(ca.Address)
+	tenantAppClient := NewSgxSocketClient(ca.TenantAppSocketAddr)
 
 	// send the connect request to tenant app
 	defaultLog.Printf("Sending request to connect to Tenant App and for SGX quote")
@@ -289,6 +289,8 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Entering")
 	defer defaultLog.Trace("controllers/app_verifier_controller:verifyQuote() Leaving")
 
+	var err error
+
 	// convert byte array to string
 	qData := string(quote)
 
@@ -297,11 +299,15 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	if !ca.Config.StandAloneMode {
 		// call goes to SQVS
 		defaultLog.Printf("Calling out to SQVS - ExternalVerifier")
-		ca.ExtVerifier.VerifyQuote(qData)
+		err = ca.ExtVerifier.VerifyQuote(qData)
 	} else {
 		// call is handled by stub
 		defaultLog.Printf("Calling out to SQVS - StandaloneVerifier")
-		ca.SaVerifier.VerifyQuote(qData)
+		err = ca.SaVerifier.VerifyQuote(qData)
+	}
+
+	if err != nil {
+		return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error in quote verification")
 	}
 
 	defaultLog.Printf("Post extended quote verification - "+
