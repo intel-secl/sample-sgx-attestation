@@ -173,6 +173,7 @@ func (a *App) configureLogs(stdOut, logFile bool) error {
 	ioWriterSecurity := io.MultiWriter(ioWriterDefault, a.secLogWriter())
 
 	logConfig := a.Config.Log
+	fmt.Printf("LOG CONFIG: %v", logConfig)
 	lv, err := logrus.ParseLevel(logConfig.Level)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initiate loggers. Invalid log level: "+logConfig.Level)
