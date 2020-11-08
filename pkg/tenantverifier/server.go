@@ -42,6 +42,7 @@ func (a *App) startServer() error {
 
 	tenantApp := tenantapp.TenantServiceApp{
 		LogWriter: os.Stdout,
+		Config:    c,
 	}
 	// dispatch Tenant App service
 	err := tenantApp.StartServer()

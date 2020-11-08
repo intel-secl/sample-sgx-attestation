@@ -62,10 +62,6 @@ func (a *TenantServiceApp) StartServer() error {
 	if c == nil {
 		return errors.New("Failed to load configuration")
 	}
-	// initialize log
-	if err := a.configureLogs(c.Log.EnableStdout, false); err != nil {
-		return err
-	}
 
 	defaultLog.Info("Starting TenantAppService")
 
