@@ -6,12 +6,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"strings"
-	"syscall"
-
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/tasks"
@@ -21,6 +15,9 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	commLogInt "intel/isecl/lib/common/v3/log/setup"
+	"io"
+	"os"
+	"strings"
 )
 
 var errInvalidCmd = errors.New("Invalid input after command")
@@ -187,31 +184,4 @@ func (a *App) configureLogs(stdOut, logFile bool) error {
 	secLog.Info(commLogMsg.LogInit)
 	defaultLog.Info(commLogMsg.LogInit)
 	return nil
-}
-
-func (a *App) start() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-app-verifier"`)
-	systemctl, err := exec.LookPath("systemctl")
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-app-verifier"}, os.Environ())
-}
-
-func (a *App) stop() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-app-verifier"`)
-	systemctl, err := exec.LookPath("systemctl")
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-app-verifier"}, os.Environ())
-}
-
-func (a *App) status() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-app-verifier"`)
-	systemctl, err := exec.LookPath("systemctl")
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-app-verifier"}, os.Environ())
 }
