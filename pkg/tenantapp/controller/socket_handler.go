@@ -34,7 +34,6 @@ func init() {
 }
 
 type SocketHandler struct {
-	SgxQuotePath string
 }
 
 func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {

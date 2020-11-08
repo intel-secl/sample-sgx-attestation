@@ -37,9 +37,7 @@ func handleConnection(c net.Conn) {
 			return
 		}
 
-		sh := controller.SocketHandler{
-			SgxQuotePath: constants.SgxQuotePolicyPath,
-		}
+		sh := controller.SocketHandler{}
 
 		taRequest := controllers.UnmarshalRequest(rawData)
 
