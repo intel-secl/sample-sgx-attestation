@@ -14,6 +14,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -57,7 +58,9 @@ func (a *App) startServer() error {
 		SgxQuotePolicyPath: constants.SgxQuotePolicyPath,
 	}
 	// kick off the workflow
-	verifyController.VerifyTenantAndShareSecret()
+	for !verifyController.VerifyTenantAndShareSecret() {
+		time.Sleep(time.Second * 1)
+	}
 
 	secLog.Info(commLogMsg.ServiceStop)
 	return nil
