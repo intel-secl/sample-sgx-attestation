@@ -76,14 +76,14 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 	defaultLog.Printf("Sending request to connect to Tenant App and for SGX quote")
 	connectResponseBytes, err := tenantAppClient.socketRequest(connectRequest)
 	if err != nil {
-		defaultLog.Printf("Error connecting to Tenant app")
+		defaultLog.WithError(err).Errorf("Error connecting to Tenant app")
 		return false
 	}
 
 	// parse connect request response from tenant app
 	connectResponse, err := UnmarshalResponse(connectResponseBytes)
 	if err != nil {
-		defaultLog.Printf("Error while unmarshalling response for connect from Tenant app")
+		defaultLog.WithError(err).Errorf("Error while unmarshalling response for connect from Tenant app")
 		return false
 	}
 	if connectResponse != nil && connectResponse.RespCode == constants.ResponseCodeSuccess {
@@ -118,7 +118,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		defaultLog.Printf("Wrapping SWK by Tenant Enclave Public Key")
 		pubkeyWrappedSWK, err := wrapSWKByPublicKey(swk, enclavePublicKey)
 		if err != nil {
-			defaultLog.Printf("Error while wrapping SWK by Tenant enclave ublic key")
+			defaultLog.WithError(err).Errorf("Error while wrapping SWK by Tenant enclave public key")
 			return false
 		}
 		defaultLog.Printf("Wrapped SWK by Tenant Enclave Public Key")
@@ -132,25 +132,25 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		defaultLog.Printf("Sending request to send Wrapped SWK to Tenant App")
 		wrappedSWKResponseBytes, err := tenantAppClient.socketRequest(wrappedSWKRequest)
 		if err != nil {
-			defaultLog.Printf("Error while getting response for wrapped SWK from Tenant app")
+			defaultLog.WithError(err).Errorf("Error while getting response for wrapped SWK from Tenant app")
 			return false
 		}
 		wrappedSWKResponse, err := UnmarshalResponse(wrappedSWKResponseBytes)
 		if err != nil {
-			defaultLog.Printf("Error while unmarshalling response for wrapped SWK from Tenant app")
+			defaultLog.WithError(err).Errorf("Error while unmarshalling response for wrapped SWK from Tenant app")
 			return false
 		}
 		if wrappedSWKResponse != nil && wrappedSWKResponse.RespCode == constants.ResponseCodeSuccess {
-			defaultLog.Printf("Wrapped SWK sent to Tenant App successfully")
+			defaultLog.WithError(err).Errorf("Wrapped SWK sent to Tenant App successfully")
 		} else {
-			defaultLog.Printf("Failed to send Wrapped SWK sent to Tenant App")
+			defaultLog.WithError(err).Errorf("Failed to send Wrapped SWK sent to Tenant App")
 			return false
 		}
 
 		defaultLog.Printf("Generating new secret")
 		secret, err := generateSecret(constants.DefaultSecretLength)
 		if err != nil {
-			defaultLog.Printf("Error while generating secret")
+			defaultLog.WithError(err).Errorf("Error while generating secret")
 			return false
 		}
 		defaultLog.Printf("Generated new secret successfully")
@@ -158,7 +158,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		defaultLog.Printf("Wrapping secret by SWK")
 		swkWrappedSecret, err := wrapSecretBySWK(secret, swk)
 		if err != nil {
-			defaultLog.Printf("Error while wrapping SWK by Tenant enclave ublic key")
+			defaultLog.WithError(err).Errorf("Error while wrapping SWK by Tenant enclave ublic key")
 			return false
 		}
 		defaultLog.Printf("Wrapped secret by SWK successfully")
@@ -172,23 +172,23 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 
 		SWKWrappedSecretResponseBytes, err := tenantAppClient.socketRequest(SWKWrappedSecretRequest)
 		if err != nil {
-			defaultLog.Printf("Error while getting response for SWK wrapped secret from Tenant app")
+			defaultLog.WithError(err).Errorf("Error while getting response for SWK wrapped secret from Tenant app")
 			return false
 		}
 		SWKWrappedSecretResponse, err := UnmarshalResponse(SWKWrappedSecretResponseBytes)
 		if err != nil {
-			defaultLog.Printf("Error while unmarshalling response for SWK wrapped secret from Tenant app")
+			defaultLog.WithError(err).Errorf("Error while unmarshalling response for SWK wrapped secret from Tenant app")
 			return false
 		}
 		if SWKWrappedSecretResponse != nil && SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess {
-			defaultLog.Printf("Wrapped Secret by SWK sent to Tenant App successfully")
+			defaultLog.WithError(err).Errorf("Wrapped Secret by SWK sent to Tenant App successfully")
 			return SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess
 		} else {
-			defaultLog.Printf("Failed to send Wrapped Secret by SWK sent to Tenant App")
+			defaultLog.WithError(err).Errorf("Failed to send Wrapped Secret by SWK sent to Tenant App")
 			return false
 		}
 	} else {
-		defaultLog.Printf("Failed to connect to Tenant App")
+		defaultLog.WithError(err).Errorf("Failed to connect to Tenant App")
 	}
 	return false
 }
