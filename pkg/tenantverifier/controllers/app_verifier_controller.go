@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
+	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/log"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
 	"github.com/pkg/errors"
@@ -24,6 +25,9 @@ import (
 	"strconv"
 	"strings"
 )
+
+var defaultLog = log.GetDefaultLogger()
+var secLog = log.GetSecurityLogger()
 
 type resourceError struct {
 	StatusCode int
