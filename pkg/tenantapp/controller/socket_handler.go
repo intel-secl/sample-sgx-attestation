@@ -22,23 +22,24 @@ import (
 	"unsafe"
 )
 
-var appConfig *config.Configuration
 var defaultLog = log.GetDefaultLogger()
 var enclaveInitStatus C.int
 
-func init() {
-	appConfig, _ = config.LoadConfiguration()
-
-	// initialize enclave
-	enclaveInitStatus = C.init(C.bool(appConfig.StandAloneMode))
-}
-
 type SocketHandler struct {
+	Config *config.Configuration
 }
 
 func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
+	defaultLog.Trace("controller/socket_handler:HandleConnect Entering")
+	defer defaultLog.Trace("controller/socket_handler:HandleConnect Leaving")
 	var resp domain.TenantAppResponse
 	var err error
+
+	// initialize enclave
+	enclaveInitStatus = C.init(C.bool(sh.Config.StandAloneMode))
+	if enclaveInitStatus != 0 {
+		return nil, errors.Errorf("controller/socket_handler:HandleConnect Error initializing enclave - error code %d", enclaveInitStatus)
+	}
 
 	resp.RequestType = req.RequestType
 
@@ -97,8 +98,17 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 
 // HandlePubkeyWrappedSWK receives the SWK used for wrapping public key
 func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
+	defaultLog.Trace("controller/socket_handler:HandlePubkeyWrappedSWK Entering")
+	defer defaultLog.Trace("controller/socket_handler:HandlePubkeyWrappedSWK Leaving")
+
 	var resp domain.TenantAppResponse
 	var err error
+
+	// initialize enclave
+	enclaveInitStatus = C.init(C.bool(sh.Config.StandAloneMode))
+	if enclaveInitStatus != 0 {
+		return nil, errors.Errorf("controller/socket_handler:HandleConnect Error initializing enclave - error code %d", enclaveInitStatus)
+	}
 
 	resp.RequestType = req.RequestType
 
@@ -135,8 +145,17 @@ func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*do
 
 // HandleSWKWrappedSecret takes the wrapped secret from verifier app and unwraps it in the enclave
 func (sh SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
+	defaultLog.Trace("controller/socket_handler:HandleSWKWrappedSecret Entering")
+	defer defaultLog.Trace("controller/socket_handler:HandleSWKWrappedSecret Leaving")
+
 	var resp domain.TenantAppResponse
 	var err error
+
+	// initialize enclave
+	enclaveInitStatus = C.init(C.bool(sh.Config.StandAloneMode))
+	if enclaveInitStatus != 0 {
+		return nil, errors.Errorf("controller/socket_handler:HandleConnect Error initializing enclave - error code %d", enclaveInitStatus)
+	}
 
 	resp.RequestType = req.RequestType
 

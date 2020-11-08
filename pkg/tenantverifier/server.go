@@ -12,10 +12,8 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -34,22 +32,18 @@ func (a *App) startServer() error {
 		return err
 	}
 
-	defaultLog.Info("Starting server")
-
-	// Setup signal handlers to gracefully handle termination
-	stop := make(chan os.Signal)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	defaultLog.Info("Starting Tenant App Verifier server")
 
 	tenantApp := tenantapp.TenantServiceApp{
 		LogWriter: os.Stdout,
 		Config:    c,
 	}
 	// dispatch Tenant App service
-	err := tenantApp.StartServer()
-	if err != nil {
+	go tenantApp.StartServer()
+	/*	if err != nil {
 		defaultLog.WithError(err).Errorf("app:startServer() Error starting TenantApp")
 		return err
-	}
+	}*/
 
 	// start the quote verification
 	verifyController := controllers.AppVerifierController{
@@ -64,9 +58,6 @@ func (a *App) startServer() error {
 	}
 	// kick off the workflow
 	verifyController.VerifyTenantAndShareSecret()
-
-	secLog.Info(commLogMsg.ServiceStart)
-	<-stop
 
 	secLog.Info(commLogMsg.ServiceStop)
 	return nil

@@ -21,7 +21,7 @@ import (
 var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
 
-func handleConnection(c net.Conn) {
+func (a *TenantServiceApp) handleConnection(c net.Conn) {
 	var resp *domain.TenantAppResponse
 
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
@@ -33,7 +33,7 @@ func handleConnection(c net.Conn) {
 			return
 		}
 
-		sh := controller.SocketHandler{}
+		sh := controller.SocketHandler{Config: a.Config}
 
 		taRequest := controllers.UnmarshalRequest(rawData)
 
@@ -78,7 +78,7 @@ func (a *TenantServiceApp) StartServer() error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	go handleConnection(conn)
+	go a.handleConnection(conn)
 
 	secLog.Info(commLogMsg.ServiceStart)
 
