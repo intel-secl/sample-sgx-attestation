@@ -19,9 +19,8 @@ PRODUCT_HOME=/opt/$COMPONENT_NAME
 BIN_PATH=$PRODUCT_HOME/bin
 LOG_PATH=/var/log/$COMPONENT_NAME/
 CONFIG_PATH=/etc/$COMPONENT_NAME/
-CERTS_PATH=$CONFIG_PATH/ca-certs
 
-for directory in $BIN_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH; do
+for directory in $BIN_PATH $LOG_PATH $CONFIG_PATH; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
@@ -45,14 +44,6 @@ ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 chmod 755 $LOG_PATH
 chmod g+s $LOG_PATH
 
-# Install systemd script
-cp ${COMPONENT_NAME}.service $PRODUCT_HOME && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME/${COMPONENT_NAME}.service && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME
-
-# Enable systemd service
-systemctl disable ${COMPONENT_NAME}.service > /dev/null 2>&1
-systemctl enable $PRODUCT_HOME/${COMPONENT_NAME}.service
-systemctl daemon-reload
-
 auto_install() {
   local component=${1}
   local cprefix=${2}
@@ -73,18 +64,18 @@ fi
 
 if [ -z $env_file ]; then
     echo "No .env file found"
-    sgx-app-verifier_NOSETUP="true"
+    SGXAPPVERIFIER_NOSETUP="true"
 fi
 
-# check if sgx-app-verifier_NOSETUP is defined
-if [ "${sgx-app-verifier_NOSETUP,,}" == "true" ]; then
-    echo "sgx-app-verifier_NOSETUP is true, skipping setup"
+# check if SGXAPPVERIFIER_NOSETUP is defined
+if [ "${SGXAPP_NOSETUP}" == "true" ]; then
+    echo "SGXAPPVERIFIER_NOSETUP is true, skipping setup"
     echo "Run \"$COMPONENT_NAME setup all\" for manual setup"
     echo "Installation completed successfully!"
 else 
-    $COMPONENT_NAME setup all -f $env_file
+    $COMPONENT_NAME setup -f $env_file
     SETUPRESULT=$?
-    chown -R sgx-app-verifier:sgx-app-verifier /etc/sgx-app-verifier/
+    chown -R sgx-app-verifier:sgx-app-verifier "$CONFIG_PATH"
     if [ ${SETUPRESULT} == 0 ]; then
         systemctl start $COMPONENT_NAME
         echo "Waiting for daemon to settle down before checking status"
