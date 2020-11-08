@@ -80,7 +80,7 @@ const (
 
 //Protocol
 const (
-	ProtocolTcp string = "tcp"
+	ProtocolTcp string = "tcp4"
 )
 
 //Protocol type
