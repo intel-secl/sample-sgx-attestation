@@ -14,6 +14,8 @@ import (
 func init() {
 	// set default values for stand alone mode
 	viper.SetDefault("stand-alone-mode", constants.DefaultStandAloneMode)
+	viper.SetDefault("tenant-service-host", constants.DefaultTenantAppListenHost)
+	viper.SetDefault("tenant-service-port", constants.DefaultAppListenerPort)
 
 	// set default values for tls
 	viper.SetDefault("tls-cert-file", constants.DefaultTLSCertFile)
@@ -38,11 +40,13 @@ func init() {
 func defaultConfig() *config.Configuration {
 	// support old service env
 	return &config.Configuration{
-		StandAloneMode:   viper.GetBool("stand-alone-mode"),
-		AASApiUrl:        viper.GetString("aas-base-url"),
-		CMSBaseURL:       viper.GetString("cms-base-url"),
-		CmsTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
-		SqvsUrl:          viper.GetString("sqvs-url"),
+		StandAloneMode:    viper.GetBool("stand-alone-mode"),
+		TenantServiceHost: viper.GetString("tenant-service-host"),
+		TenantServicePort: viper.GetInt("tenant-service-port"),
+		AASApiUrl:         viper.GetString("aas-base-url"),
+		CMSBaseURL:        viper.GetString("cms-base-url"),
+		CmsTlsCertDigest:  viper.GetString("cms-tls-cert-sha384"),
+		SqvsUrl:           viper.GetString("sqvs-url"),
 		Service: config.ServiceConfig{
 			Username: viper.GetString("service-username"),
 			Password: viper.GetString("service-password"),

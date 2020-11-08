@@ -70,7 +70,7 @@ func (a *TenantServiceApp) StartServer() error {
 	l, err := net.Listen("tcp4", port)
 	if err != nil {
 		err = errors.Wrap(err, "app:startServer() Error binding to socket port")
-		return err
+		defaultLog.Error(err)
 	}
 
 	// dispatch tcp socket server handle routine
