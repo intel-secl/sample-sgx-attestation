@@ -5,24 +5,17 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	"fmt"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
 	"github.com/pkg/errors"
-
-	"github.com/gorilla/handlers"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/router"
-
-	stdlog "log"
-
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"syscall"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -41,53 +34,39 @@ func (a *App) startServer() error {
 		return err
 	}
 
-	// Initialize routes
-	routes := router.InitRoutes(c)
-
 	defaultLog.Info("Starting server")
-	tlsConfig := &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		CipherSuites: []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
-	}
+
 	// Setup signal handlers to gracefully handle termination
 	stop := make(chan os.Signal)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	httpLog := stdlog.New(a.httpLogWriter(), "", 0)
-	h := &http.Server{
-		Addr:              fmt.Sprintf(":%d", c.Server.Port),
-		Handler:           handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), routes)),
-		ErrorLog:          httpLog,
-		TLSConfig:         tlsConfig,
-		ReadTimeout:       c.Server.ReadTimeout,
-		ReadHeaderTimeout: c.Server.ReadHeaderTimeout,
-		WriteTimeout:      c.Server.WriteTimeout,
-		IdleTimeout:       c.Server.IdleTimeout,
-		MaxHeaderBytes:    c.Server.MaxHeaderBytes,
+
+	tenantApp := tenantapp.TenantServiceApp{
+		LogWriter: os.Stdout,
+	}
+	// dispatch Tenant App service
+	err := tenantApp.StartServer()
+	if err != nil {
+		defaultLog.WithError(err).Errorf("app:startServer() Error starting TenantApp")
+		return err
 	}
 
-	tlsCert := c.TLS.CertFile
-	tlsKey := c.TLS.KeyFile
-	// dispatch web server go routine
-	go func() {
-		if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
-			defaultLog.WithError(err).Info("Failed to start HTTPS server")
-			stop <- syscall.SIGTERM
-		}
-	}()
+	// start the quote verification
+	verifyController := controllers.AppVerifierController{
+		TenantAppSocketAddr: strings.Join([]string{constants.DefaultTenantAppListenHost, strconv.Itoa(constants.DefaultAppListenerPort)}, ":"),
+		Config:              c,
+		ExtVerifier: controllers.ExternalVerifier{
+			Config:     c,
+			CaCertsDir: constants.CaCertsDir,
+		},
+		SaVerifier:         controllers.StandaloneVerifier{},
+		SgxQuotePolicyPath: constants.SgxQuotePolicyPath,
+	}
+	// kick off the workflow
+	verifyController.VerifyTenantAndShareSecret()
 
 	secLog.Info(commLogMsg.ServiceStart)
 	<-stop
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := h.Shutdown(ctx); err != nil {
-		defaultLog.WithError(err).Info("Failed to gracefully shutdown webserver")
-		return err
-	}
 	secLog.Info(commLogMsg.ServiceStop)
 	return nil
 }
