@@ -12,14 +12,10 @@ import (
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/pkg/errors"
-	"net"
-	"os"
-	"os/signal"
-	"strconv"
-	"syscall"
-
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
+	"net"
+	"strconv"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -73,10 +69,6 @@ func (a *TenantServiceApp) StartServer() error {
 
 	defaultLog.Info("Starting TenantAppService")
 
-	// Setup signal handlers to gracefully handle termination
-	stop := make(chan os.Signal)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-
 	// check if socket can be opened up
 	port := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
 	l, err := net.Listen("tcp4", port)
@@ -93,7 +85,6 @@ func (a *TenantServiceApp) StartServer() error {
 	go handleConnection(conn)
 
 	secLog.Info(commLogMsg.ServiceStart)
-	<-stop
 
 	if err := l.Close(); err != nil {
 		defaultLog.WithError(err).Info("Failed to gracefully shutdown TCP server")
