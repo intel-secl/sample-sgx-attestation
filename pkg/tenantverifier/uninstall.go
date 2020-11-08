@@ -73,11 +73,6 @@ func (a *App) uninstall(purge bool) error {
 	if err != nil {
 		defaultLog.WithError(err).Error("error removing executable")
 	}
-	fmt.Println("removing : ", a.runDirPath())
-	err = os.Remove(a.runDirPath())
-	if err != nil {
-		defaultLog.WithError(err).Error("error removing ", a.runDirPath())
-	}
 	fmt.Println("removing : ", a.execLinkPath())
 	err = os.Remove(a.execLinkPath())
 	if err != nil {
@@ -101,6 +96,6 @@ func (a *App) uninstall(purge bool) error {
 	if err != nil {
 		defaultLog.WithError(err).Error("error removing home dir")
 	}
-	fmt.Fprintln(a.consoleWriter(), "Service Service uninstalled")
+	fmt.Fprintln(a.consoleWriter(), constants.ServiceName+" Service uninstalled")
 	return nil
 }
