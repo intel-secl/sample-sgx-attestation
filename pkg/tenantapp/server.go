@@ -14,8 +14,10 @@ import (
 	"github.com/pkg/errors"
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
+	"math/rand"
 	"net"
 	"strconv"
+	"time"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -24,8 +26,9 @@ var secLog = commLog.GetSecurityLogger()
 func (a *TenantServiceApp) handleConnection(c net.Conn) {
 	var resp *domain.TenantAppResponse
 
-	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	defer c.Close()
+
+	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	for {
 		rawData, err := bufio.NewReader(c).ReadBytes('\n')
 		if err != nil {
@@ -44,6 +47,7 @@ func (a *TenantServiceApp) handleConnection(c net.Conn) {
 			resp, err = sh.HandlePubkeyWrappedSWK(taRequest)
 		case constants.ReqTypeSWKWrappedSecret:
 			resp, err = sh.HandleSWKWrappedSecret(taRequest)
+			break
 		}
 
 		if err != nil {
@@ -73,19 +77,19 @@ func (a *TenantServiceApp) StartServer() error {
 		defaultLog.Error(err)
 	}
 
+	rand.Seed(time.Now().Unix())
+
+	defer secLog.Info(commLogMsg.ServiceStop)
+	defer l.Close()
+
 	// dispatch tcp socket server handle routine
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println(err)
-	}
-	go a.handleConnection(conn)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
+			return err
+		}
 
-	secLog.Info(commLogMsg.ServiceStart)
-
-	if err := l.Close(); err != nil {
-		defaultLog.WithError(err).Info("Failed to gracefully shutdown TCP server")
-		return err
+		go a.handleConnection(conn)
 	}
-	secLog.Info(commLogMsg.ServiceStop)
-	return nil
 }
