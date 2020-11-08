@@ -14,10 +14,8 @@ import (
 	"github.com/pkg/errors"
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"math/rand"
 	"net"
 	"strconv"
-	"time"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -71,14 +69,11 @@ func (a *TenantServiceApp) StartServer() error {
 	go func() {
 		// check if socket can be opened up
 		listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
-		l, err := net.Listen("tcp4", listenAddr)
+		l, err := net.Listen(constants.ProtocolTcp, listenAddr)
 		if err != nil {
 			err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
 			defaultLog.Error(err)
 		}
-
-		rand.Seed(time.Now().Unix())
-
 		defer secLog.Info(commLogMsg.ServiceStop)
 		defer l.Close()
 
