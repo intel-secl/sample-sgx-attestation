@@ -1,8 +1,8 @@
 #!/bin/bash
 
 COMPONENT_NAME=sgx-app-verifier
-
 SERVICE_USERNAME=sgx-app-verifier
+APP_LIB=libapp.so
 
 if [[ $EUID -ne 0 ]]; then 
     echo "This installer must be run as root"
@@ -16,6 +16,7 @@ id -u $SERVICE_USERNAME 2> /dev/null || useradd -M --system --shell /sbin/nologi
 echo "Installing sgx-app-verifier..."
 
 PRODUCT_HOME=/opt/$COMPONENT_NAME
+LIB_PATH=/usr/lib64/
 BIN_PATH=$PRODUCT_HOME/bin
 LOG_PATH=/var/log/$COMPONENT_NAME/
 CONFIG_PATH=/etc/$COMPONENT_NAME/
@@ -39,6 +40,10 @@ chmod -R g+s $CONFIG_PATH
 cp $COMPONENT_NAME $BIN_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $BIN_PATH/*
 chmod 700 $BIN_PATH/*
 ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
+
+cp -f $APP_LIB $LIB_PATH
+chmod 775 ${LIB_PATH}/${APP_LIB}
+ldconfig
 
 # make log files world readable
 chmod 755 $LOG_PATH
