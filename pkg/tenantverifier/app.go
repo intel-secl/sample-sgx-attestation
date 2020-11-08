@@ -73,21 +73,6 @@ func (a *App) Run(args []string) error {
 			return errInvalidCmd
 		}
 		return a.startServer()
-	case "start":
-		if len(args) != 2 {
-			return errInvalidCmd
-		}
-		return a.start()
-	case "stop":
-		if len(args) != 2 {
-			return errInvalidCmd
-		}
-		return a.stop()
-	case "status":
-		if len(args) != 2 {
-			return errInvalidCmd
-		}
-		return a.status()
 	case "uninstall":
 		// the only allowed flag is --purge
 		purge := false

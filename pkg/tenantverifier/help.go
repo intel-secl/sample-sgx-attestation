@@ -16,22 +16,8 @@ const helpStr = `Usage:
 Available Commands:
 	help|-h|--help         Show this help message
 	version|-v|--version   Show the version of current sgx-app-verifier build
-	setup <task>           Run setup task
 	start                  Start sgx-app-verifier
-	status                 Show the status of sgx-app-verifier
-	stop                   Stop sgx-app-verifier
-	uninstall [--purge]    Uninstall sgx-app-verifier	
-
-Usage of sgx-app-verifier setup:
-	sgx-app-verifier setup <task> [--help] [--force] [-f <answer-file>]
-		--help                      show help message for setup task
-		--force                     existing configuration will be overwritten if this flag is set
-
-Available Tasks for setup:
-	all                             Runs all setup tasks
-	server                          Setup http server on given port
-	download_ca_cert                Download CMS root CA certificate
-	download_cert tls               Download CA certificate from CMS for tls
+	uninstall              Uninstall sgx-app-verifier
 `
 
 func (a *App) printUsage() {
