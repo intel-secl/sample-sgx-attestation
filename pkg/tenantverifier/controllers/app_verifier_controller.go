@@ -103,7 +103,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		defaultLog.Printf("Verifying SGX quote")
 		err := ca.verifySgxQuote(sgxQuote)
 		if err != nil {
-			defaultLog.Printf("Error while verifying SGX quote")
+			defaultLog.WithError(err).Errorf("Error while verifying SGX quote")
 			return false
 		}
 		defaultLog.Printf("Verified SGX quote successfully")
