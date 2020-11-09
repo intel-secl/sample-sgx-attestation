@@ -14,6 +14,7 @@ verifier-installer: verifier
 	cp pkg/tenantverifier/out/sgx-app-verifier installer/
 	cp build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
 	cp build/linux/libapp.so installer/libapp.so
+	cp build/linux/libenclave.so installer/libenclave.so
 	makeself installer out/sgx-app-verifier-$(VERSION).bin "sgx-app-verifier $(VERSION)" ./install.sh
 	rm -rf installer
 

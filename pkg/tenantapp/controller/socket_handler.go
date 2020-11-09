@@ -10,6 +10,7 @@ package controller
 // #cgo LDFLAGS: -L /usr/lib64 -l sgx_pce_logic
 // #cgo LDFLAGS: -L /usr/lib64 -l sgx_dcap_ql
 // #cgo LDFLAGS: -L /usr/lib64/ -l sgx_urts
+// #cgo LDFLAGS: -L /usr/lib64/ -l enclave
 // #include "App_Func.h"
 import "C"
 

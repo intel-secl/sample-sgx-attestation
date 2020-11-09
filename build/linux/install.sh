@@ -3,6 +3,7 @@
 COMPONENT_NAME=sgx-app-verifier
 SERVICE_USERNAME=sgx-app-verifier
 APP_LIB=libapp.so
+ENCLAVE_LIB=libenclave.so
 
 if [[ $EUID -ne 0 ]]; then 
     echo "This installer must be run as root"
@@ -41,7 +42,7 @@ cp $COMPONENT_NAME $BIN_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $BIN_
 chmod 700 $BIN_PATH/*
 ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 
-cp -f $APP_LIB $LIB_PATH
+cp -f $APP_LIB $ENCLAVE_LIB $LIB_PATH
 chmod 775 ${LIB_PATH}/${APP_LIB}
 ldconfig
 
