@@ -331,7 +331,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 		// split by :
 		lv := strings.Split(strings.TrimSpace(line), constants.PolicyFileDelim)
 		if len(lv) != 2 {
-			return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Error parsing quote policy file: incorrect number of fields: %d", len(lv))
+			continue
 		}
 		// switch by field name
 		switch lv[0] {
