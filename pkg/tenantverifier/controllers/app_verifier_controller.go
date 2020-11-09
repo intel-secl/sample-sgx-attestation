@@ -340,7 +340,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 		case constants.MRSignerField:
 			mrSignerValue = lv[1]
 		case constants.CpuSvnField:
-			cpusvnValue = lv[2]
+			cpusvnValue = lv[1]
 		}
 	}
 
