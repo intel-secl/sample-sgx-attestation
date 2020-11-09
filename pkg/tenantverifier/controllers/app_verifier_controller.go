@@ -333,8 +333,14 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	defaultLog.Printf("Quote policy has values MREnclaveField = %s | MRSignerField = %s | CpuSvnField = %s",
 		mreValue, mrSignerValue, cpusvnValue)
 
+	// for standalone mode, pass quote to the SQVS stub
+	parsedBlob := parser.ParseSkcQuoteBlob(qData)
+	if parsedBlob == nil {
+		return errors.New("controllers/app_verifier_controller:verifyQuote() Error parsing quote")
+	}
+
 	// compare against hardcoded SGX quote policy
-	parsedQBlob := parser.ParseEcdsaQuoteBlob(quote)
+	parsedQBlob := parser.ParseEcdsaQuoteBlob(parsedBlob.GetQuoteBlob())
 	if parsedQBlob != nil {
 		return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error parsing quote")
 	}
