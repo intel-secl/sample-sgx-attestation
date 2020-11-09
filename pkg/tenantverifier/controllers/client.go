@@ -35,7 +35,7 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 	log.Printf("Send: %s", msg)
 
 	// read from server
-	buff := make([]byte, 1024)
+	buff := make([]byte, 999999)
 	n, err := conn.Read(buff)
 	log.Printf("Receive: %s", buff[:n])
 	return buff, err
