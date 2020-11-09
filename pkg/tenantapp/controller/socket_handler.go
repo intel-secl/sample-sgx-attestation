@@ -67,13 +67,11 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 
 	defaultLog.Print("Getting quote from the Tenant App Enclave")
 
-	var cint C.int
-	cint = C.int(1)
-	var qBytes []uint8
+	var qSize C.int
+	var qBytes []byte
 	var qPtr *C.u_int8_t
-	qPtr = C.get_SGX_Quote(&cint)
-	bufferSize := C.int(unsafe.Sizeof(qPtr))
-	qBytes = (*[1 << 30]byte)(unsafe.Pointer(C.get_SGX_Quote(&cint)))[bufferSize:bufferSize]
+	qPtr = C.get_SGX_Quote(&qSize)
+	qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
 
 	// return the preset quote from file
 	//qBytes, err := ioutil.ReadFile(sh.SgxQuotePath)
