@@ -360,7 +360,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	if fmt.Sprintf("%02x", parsedQBlob.Header.ReportBody.CpuSvn) != cpusvnValue {
 		err = errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
 	}
-	if fmt.Sprintf("%02x", parsedQBlob.GetQeReportMrSigner()) != mrSignerValue {
+	if fmt.Sprintf("%02x", parsedQBlob.Header.ReportBody.MrSigner) != mrSignerValue {
 		err = errors.Errorf("controllers/app_verifier_controller:verifyQuote() Quote policy mismatch in %s", constants.MREnclaveField)
 	}
 
