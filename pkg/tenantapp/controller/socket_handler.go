@@ -59,6 +59,7 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 		}
 	}
 
+	defaultLog.Debugf("controller/socket_handler:HandleConnect Received credentials %s | %s", username, password)
 	if username != constants.TenantUsername || password != constants.TenantPassword {
 		resp.RespCode = constants.ResponseCodeFailure
 		err = errors.New("controller/socket_handler:HandleConnect Invalid credentials")
