@@ -83,18 +83,32 @@ func UnmarshalRequest(req []byte) domain.TenantAppRequest {
 	var tar domain.TenantAppRequest
 	// get Request Type
 	tar.RequestType = req[0]
+	defaultLog.Debugf("UnmarshalRequest: RequestType - %d", tar.RequestType)
+
 	// get Param Length
 	tar.ParamLength = binary.BigEndian.Uint16(req[1:3])
-	var i uint16 = 3
-	for i < tar.ParamLength+2 {
+	defaultLog.Debugf("UnmarshalRequest: ParamLength - %d", tar.ParamLength)
+
+	var elements []domain.TenantAppMessageElement
+
+	var curByte uint16 = 3
+	for i := 0; i < int(tar.ParamLength); i++ {
 		var te domain.TenantAppMessageElement
 		te.Type = req[i]
-		i += 1
-		te.Length = binary.BigEndian.Uint16(req[i : i+2])
-		i += 2
-		te.Payload = req[i : i+te.Length]
-		i += te.Length
+		defaultLog.Debugf("UnmarshalRequest: Element %d | Type - %d", i, te.Type)
+		curByte += 1
+		te.Length = binary.BigEndian.Uint16(req[curByte : curByte+2])
+		defaultLog.Debugf("UnmarshalRequest: Element %d | ParamLength - %d", i, te.Length)
+		curByte += 2
+		te.Payload = req[curByte : curByte+te.Length]
+		curByte += te.Length
+		defaultLog.Debugf("UnmarshalRequest: Element %d | Payload - %s", i, te.Payload)
+		elements = append(elements, te)
 	}
+
+	tar.Elements = elements
+
+	defaultLog.Debugf("UnmarshalRequest: Request return %v", tar)
 
 	return tar
 }
@@ -157,5 +171,7 @@ func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 	} else if connectResponse.RequestType != constants.ReqTypePubkeyWrappedSWK && connectResponse.RequestType != constants.ReqTypeSWKWrappedSecret {
 		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: Invalid request-response type")
 	}
+
+	defaultLog.Debugf("UnmarshalResponse: %v", connectResponse)
 	return &connectResponse, nil
 }
