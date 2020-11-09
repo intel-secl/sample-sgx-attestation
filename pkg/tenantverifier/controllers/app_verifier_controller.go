@@ -11,7 +11,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/log"
@@ -22,7 +21,6 @@ import (
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"intel/isecl/sqvs/v3/resource/parser"
 	"io/ioutil"
-	"net/http"
 	"strconv"
 	"strings"
 )
@@ -45,18 +43,6 @@ type AppVerifierController struct {
 	ExtVerifier         ExternalVerifier
 	SaVerifier          StandaloneVerifier
 	SgxQuotePolicyPath  string
-}
-
-type appVerifierResponse struct {
-	Status bool
-}
-
-func (ca AppVerifierController) Verify(w http.ResponseWriter, r *http.Request) {
-	defaultLog.Trace("controllers/app_verifier_controller:Create() Entering")
-	defer defaultLog.Trace("controllers/app_verifier_controller:Create() Leaving")
-	result := ca.VerifyTenantAndShareSecret()
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(appVerifierResponse{Status: result})
 }
 
 func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
