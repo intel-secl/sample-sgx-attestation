@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -296,7 +297,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	var err error
 
 	// convert byte array to string
-	qData := string(quote)
+	qData := base64.StdEncoding.EncodeToString(quote)
 
 	defaultLog.Printf("Standalone mode is set to %s", strconv.FormatBool(ca.Config.StandAloneMode))
 	// based on the operation mode - standalone or non-standalone mode
