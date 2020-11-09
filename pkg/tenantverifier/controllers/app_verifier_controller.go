@@ -329,7 +329,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	var mreValue, mrSignerValue, cpusvnValue string
 	for _, line := range lines {
 		// split by :
-		lv := strings.Split(line, constants.PolicyFileDelim)
+		lv := strings.Split(strings.TrimSpace(line), constants.PolicyFileDelim)
 		if len(lv) != 2 {
 			return errors.Errorf("controllers/app_verifier_controller:verifyQuote() Error parsing quote policy file: incorrect number of fields: %d", len(lv))
 		}
@@ -348,7 +348,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 		mreValue, mrSignerValue, cpusvnValue)
 
 	// compare against hardcoded SGX quote policy
-	parsedQBlob := parser.ParseEcdsaQuoteBlob(qpRaw)
+	parsedQBlob := parser.ParseEcdsaQuoteBlob(quote)
 	if parsedQBlob != nil {
 		return errors.Wrap(err, "controllers/app_verifier_controller:verifyQuote() Error parsing quote")
 	}
