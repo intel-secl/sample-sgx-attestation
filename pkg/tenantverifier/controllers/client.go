@@ -5,11 +5,13 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/spf13/cast"
+	"io"
 	"log"
 	"net"
 )
@@ -28,6 +30,7 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 
 	// send to server
 	conn.Write(msg)
@@ -35,10 +38,12 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 	log.Printf("Send: %s", msg)
 
 	// read from server
-	buff := make([]byte, 999999)
-	n, err := conn.Read(buff)
-	log.Printf("Receive: %s", buff[:n])
-	return buff, err
+	var buf bytes.Buffer
+	io.Copy(&buf, conn)
+	fmt.Println("total response size:", buf.Len())
+	response := buf.Bytes()
+	log.Printf("Receive: %s", string(response))
+	return response, err
 }
 
 //Requests from the Tenant App Verifier shall use the following format:
