@@ -9,8 +9,10 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/pem"
 	"fmt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/log"
@@ -243,13 +245,14 @@ func wrapSWKByPublicKey(swk []byte, key []byte) ([]byte, error) {
 	defaultLog.Trace("controllers/app_verifier_controller:wrapSWKByPublicKey() Entering")
 	defer defaultLog.Trace("controllers/app_verifier_controller:wrapSWKByPublicKey() Leaving")
 
-	rsaPubKey, err := crypt.GetPublicKeyFromPem(key)
+	pemBlock, _ := pem.Decode(key)
+	rsaPubKey, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
 		secLog.WithError(err).Errorf("controllers/app_verifier_controller:wrapSWKByPublicKey() %s : Public key decode failed", commLogMsg.InvalidInputBadParam)
 		return nil, errors.Wrap(err, "Failed to decode public key")
 	}
 
-	rsaKey, ok := rsaPubKey.(*rsa.PublicKey)
+	rsaKey, ok := (rsaPubKey).(*rsa.PublicKey)
 	if !ok {
 		return nil, errors.Wrap(err, "controllers/app_verifier_controller:wrapSWKByPublicKey() Invalid PEM passed in from user, should be RSA.")
 	}
