@@ -15,7 +15,10 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"net"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -74,28 +77,34 @@ func (a *App) startServer() error {
 
 	defaultLog.Info("Starting TenantAppService")
 
-	// dispatch tcp socket server handle
-	go func() {
-		// check if socket can be opened up
-		listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
-		defaultLog.Infof("app:startServer Binding to %s", listenAddr)
-		l, err := net.Listen(constants.ProtocolTcp, listenAddr)
+	// check if socket can be opened up
+	listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
+	defaultLog.Infof("app:startServer Binding to %s", listenAddr)
+	l, err := net.Listen(constants.ProtocolTcp, listenAddr)
+	if err != nil {
+		err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
+		defaultLog.Error(err)
+	}
+
+	// Setup signal handlers to gracefully handle termination
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	for {
+		conn, err := l.Accept()
 		if err != nil {
-			err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
-			defaultLog.Error(err)
+			defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
+			break
 		}
-		defer secLog.Info(commLogMsg.ServiceStop)
-		defer l.Close()
 
-		for {
-			conn, err := l.Accept()
-			if err != nil {
-				defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
-				break
-			}
+		go a.handleConnection(conn)
+	}
+	<-stop
+	secLog.Info(commLogMsg.ServiceStop)
+	if err := l.Close(); err != nil {
+		defaultLog.WithError(err).Info("Failed to gracefully shutdown TCP socket")
+		return err
+	}
 
-			go a.handleConnection(conn)
-		}
-	}()
 	return nil
 }
