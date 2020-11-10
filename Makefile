@@ -7,15 +7,25 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 .PHONY: clean verifier tenantapp test
 
 verifier:
-	cd pkg/tenantverifier && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/tenantverifier/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
+	cd pkg/tenantverifier && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
 
 verifier-installer: verifier
 	mkdir -p installer out/
-	cp pkg/tenantverifier/out/sgx-app-verifier installer/
+	cp pkg/tenantappservice/out/sgx-app-verifier installer/
 	cp build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
-	cp build/linux/libapp.so installer/libapp.so
-	cp build/linux/libenclave.so installer/libenclave.so
 	makeself installer out/sgx-app-verifier-$(VERSION).bin "sgx-app-verifier $(VERSION)" ./install.sh
+	rm -rf installer
+
+tenantappservice:
+	cd pkg/tenantappservice && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.GitHash=$(GITCOMMIT)" -o out/sgx-tenant-app-service
+
+tenantappservice-installer: tenantappservice
+	mkdir -p installer out/
+	cp pkg/tenantappservice/out/sgx-tenant-app-service installer/
+	cp pkg/tenantappservice/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
+	cp pkg/tenantappservice/build/linux/libapp.so installer/libapp.so
+	cp pkg/tenantappservice/build/linux/libenclave.so installer/libenclave.so
+	makeself installer out/sgx-tenant-app-service-$(VERSION).bin "sgx-tenant-app-service $(VERSION)" ./install.sh
 	rm -rf installer
 
 test:
