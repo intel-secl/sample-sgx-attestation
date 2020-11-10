@@ -6,7 +6,7 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 
 .PHONY: clean verifier tenantappservice test
 
-verifier:
+verifier: verifier
 	cd pkg/tenantverifier && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
 
 verifier-installer: verifier
@@ -25,6 +25,7 @@ tenantappservice-installer: tenantappservice
 	cp pkg/tenantappservice/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
 	cp pkg/tenantappservice/build/linux/libapp.so installer/libapp.so
 	cp pkg/tenantappservice/build/linux/libenclave.so installer/libenclave.so
+	cp pkg/tenantappservice/build/linux/sgx-tenantapp-service.service installer/sgx-tenantapp-service.service
 	makeself installer out/sgx-tenantapp-service-$(VERSION).bin "sgx-tenantapp-service $(VERSION)" ./install.sh
 	rm -rf installer
 
