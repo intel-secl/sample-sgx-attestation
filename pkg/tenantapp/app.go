@@ -12,7 +12,7 @@ import (
 	"syscall"
 
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/constants"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -20,8 +20,6 @@ import (
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	commLogInt "intel/isecl/lib/common/v3/log/setup"
 )
-
-var errInvalidCmd = errors.New("Invalid input after command")
 
 type App struct {
 	HomeDir        string

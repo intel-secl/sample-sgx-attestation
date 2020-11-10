@@ -19,7 +19,7 @@ import (
 	"encoding/pem"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/log"

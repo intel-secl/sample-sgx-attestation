@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
-	e "intel/isecl/lib/common/v3/exec"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/constants"
+	"intel/isecl/lib/common/v3/exec"
 )
 
 func (a *App) executablePath() string {
@@ -62,7 +62,7 @@ func (a *App) runDirPath() string {
 func (a *App) uninstall(purge bool) error {
 	fmt.Println("Uninstalling Service Service")
 	// remove service
-	_, _, err := e.RunCommandWithTimeout(constants.ServiceRemoveCmd, 5)
+	_, _, err := exec.RunCommandWithTimeout(constants.ServiceRemoveCmd, 5)
 	if err != nil {
 		fmt.Println("Could not disable Service Service")
 		fmt.Println("Error : ", err)
