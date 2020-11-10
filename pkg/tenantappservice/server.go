@@ -7,7 +7,6 @@ package main
 import (
 	"bufio"
 	"encoding/base64"
-	"fmt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/controller"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
@@ -27,7 +26,7 @@ func (a *App) handleConnection(c net.Conn) {
 
 	defer c.Close()
 
-	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
+	defaultLog.Printf("Serving %s\n", c.RemoteAddr().String())
 	b64Req, err := bufio.NewReader(c).ReadBytes('\n')
 	if err != nil {
 		defaultLog.WithError(err).Errorf("server:handleConnection failed to read request body")
@@ -52,7 +51,6 @@ func (a *App) handleConnection(c net.Conn) {
 		resp, err = sh.HandlePubkeyWrappedSWK(taRequest)
 	case constants.ReqTypeSWKWrappedSecret:
 		resp, err = sh.HandleSWKWrappedSecret(taRequest)
-		break
 	}
 
 	if err != nil {
@@ -61,7 +59,7 @@ func (a *App) handleConnection(c net.Conn) {
 	}
 
 	defaultLog.Print("server:handleConnection Sending response")
-	// send encoded response
+	// send base64 encoded response
 	c.Write([]byte(base64.StdEncoding.EncodeToString(controllers.MarshalResponse(*resp)) + constants.EndLine))
 }
 
