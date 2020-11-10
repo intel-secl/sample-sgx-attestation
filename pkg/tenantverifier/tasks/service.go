@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/setup"
 )

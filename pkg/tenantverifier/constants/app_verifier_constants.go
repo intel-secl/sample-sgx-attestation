@@ -111,8 +111,7 @@ const (
 )
 
 const (
-	StopCharacter = "\r\n\r\n"
-	EndLine       = "\n"
+	EndLine = "\n"
 )
 
 // SGX Policy

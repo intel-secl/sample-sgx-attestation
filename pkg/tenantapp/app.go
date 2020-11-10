@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/constants"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
