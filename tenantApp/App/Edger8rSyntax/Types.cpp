@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Intel Corporation. All rights reserved.
+ * Copyright (C) 2011-2020 Intel Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,49 +30,48 @@
  */
 
 
-#ifndef _APP_FUN_H_
-#define _APP_FUN_H_
+#include "../App_Func.h"
+#include "Enclave_u.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdbool.h>
+/* edger8r_type_attributes:
+ *   Invokes ECALLs declared with basic types.
+ */
+void edger8r_type_attributes(void)
+{
+    sgx_status_t ret = SGX_ERROR_UNEXPECTED;
 
-#include "sgx_error.h"       /* sgx_status_t */
-#include "sgx_eid.h"     /* sgx_enclave_id_t */
-#include "sgx_defs.h"     /* sgx_enclave_id_t */
+    ret = ecall_type_char(global_eid, (char)0x12);
+    if (ret != SGX_SUCCESS)
+        abort();
 
-#ifndef TRUE
-# define TRUE 1
-#endif
+    ret = ecall_type_int(global_eid, (int)1234);
+    if (ret != SGX_SUCCESS)
+        abort();
 
-#ifndef FALSE
-# define FALSE 0
-#endif
+    ret = ecall_type_float(global_eid, (float)1234.0);
+    if (ret != SGX_SUCCESS)
+        abort();
 
-# define TOKEN_FILENAME   "enclave.token"
-# define ENCLAVE_FILENAME "enclave.signed.so"
+    ret = ecall_type_double(global_eid, (double)1234.5678);
+    if (ret != SGX_SUCCESS)
+        abort();
 
-extern sgx_enclave_id_t global_eid;    /* global enclave id */
+    ret = ecall_type_size_t(global_eid, (size_t)12345678);
+    if (ret != SGX_SUCCESS)
+        abort();
 
-void print_error_message(sgx_status_t ret);
-int initialize_enclave(void);
+    ret = ecall_type_wchar_t(global_eid, (wchar_t)0x1234);
+    if (ret != SGX_SUCCESS)
+        abort();
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-int get_Key();
-uint8_t* get_SGX_Quote(int* x);
-void unwrap_SWK();
-void unwrap_Secret();
-
-int SGX_CDECL init(bool argc);
-int destroy_Enclave();
-//#endif
-
-#if defined(__cplusplus)
+    struct struct_foo_t g = {1234, 5678};
+    ret = ecall_type_struct(global_eid, g);
+    if (ret != SGX_SUCCESS)
+        abort();
+    
+    union union_foo_t val = {0};
+    ret = ecall_type_enum_union(global_eid, ENUM_FOO_0, &val);
+    if (ret != SGX_SUCCESS)
+        abort();
+    assert(val.union_foo_0 == 2);
 }
-#endif
-
-#endif /* !_APP_FUNC_H_ */
