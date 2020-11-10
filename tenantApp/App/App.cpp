@@ -71,7 +71,7 @@ if (status != 0) {
     uint8_t* quote = get_SGX_Quote(&size);
     printf("size of quote is: %d\n", size);
     uint8_t* p_quote = (uint8_t*)malloc(size);
-	memcpy(p_quote, quote, size);
+    memcpy(p_quote, quote, size);
 
     unwrap_SWK();
     unwrap_Secret();
