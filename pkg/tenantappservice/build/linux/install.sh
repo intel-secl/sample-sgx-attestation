@@ -1,7 +1,7 @@
 #!/bin/bash
 
-COMPONENT_NAME=sgx-app-verifier
-SERVICE_USERNAME=sgx-app-verifier
+COMPONENT_NAME=sgx-tenantapp-service
+SERVICE_USERNAME=sgx-tenantapp-service
 APP_LIB=libapp.so
 ENCLAVE_LIB=libenclave.so
 
@@ -10,11 +10,11 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "Setting up sgx-app-verifier Linux User..."
+echo "Setting up sgx-tenantapp-service Linux User..."
 # useradd -M -> this user has no home directory
 id -u $SERVICE_USERNAME 2> /dev/null || useradd -M --system --shell /sbin/nologin $SERVICE_USERNAME
 
-echo "Installing sgx-app-verifier..."
+echo "Installing sgx-tenantapp-service..."
 
 PRODUCT_HOME=/opt/$COMPONENT_NAME
 LIB_PATH=/usr/lib64/
@@ -70,18 +70,18 @@ fi
 
 if [ -z $env_file ]; then
     echo "No .env file found"
-    SGXAPPVERIFIER_NOSETUP="true"
+    SGXTENANTAPPSERVICE_NOSETUP="true"
 fi
 
-# check if SGXAPPVERIFIER_NOSETUP is defined
+# check if SGXTENANTAPPSERVICE_NOSETUP is defined
 if [ "${SGXAPP_NOSETUP}" == "true" ]; then
-    echo "SGXAPPVERIFIER_NOSETUP is true, skipping setup"
+    echo "SGXTENANTAPPSERVICE_NOSETUP is true, skipping setup"
     echo "Run \"$COMPONENT_NAME setup all\" for manual setup"
     echo "Installation completed successfully!"
 else 
     $COMPONENT_NAME setup -f $env_file
     SETUPRESULT=$?
-    chown -R sgx-app-verifier:sgx-app-verifier "$CONFIG_PATH"
+    chown -R sgx-tenantapp-service:sgx-tenantapp-service "$CONFIG_PATH"
     if [ ${SETUPRESULT} == 0 ]; then
         echo "Installation completed successfully!"
     else 
