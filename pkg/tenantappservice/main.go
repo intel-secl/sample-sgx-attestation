@@ -10,7 +10,7 @@ import (
 	"os/user"
 	"strconv"
 
-	. "github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/constants"
+	. "github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
 )
 
 func openLogFiles() (logFile *os.File, secLogFile *os.File, err error) {

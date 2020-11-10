@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
 	"intel/isecl/lib/common/v3/exec"
 )
 

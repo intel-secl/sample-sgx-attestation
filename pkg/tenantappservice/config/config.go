@@ -5,7 +5,7 @@
 package config
 
 import (
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
