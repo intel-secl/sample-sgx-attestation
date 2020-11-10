@@ -147,7 +147,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		defaultLog.Printf("Wrapping secret by SWK")
 		swkWrappedSecret, err := wrapSecretBySWK(secret, swk)
 		if err != nil {
-			defaultLog.WithError(err).Errorf("Error while wrapping SWK by Tenant enclave ublic key")
+			defaultLog.WithError(err).Errorf("Error while wrapping secret by SWK")
 			return false
 		}
 		defaultLog.Printf("Wrapped secret by SWK successfully")
