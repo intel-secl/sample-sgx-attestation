@@ -9,7 +9,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/crypt"
 	"intel/isecl/lib/common/v3/setup"

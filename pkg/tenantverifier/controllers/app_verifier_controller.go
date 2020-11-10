@@ -16,11 +16,10 @@ import (
 	"fmt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/log"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/lib"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"intel/isecl/sqvs/v3/resource/parser"
 	"io/ioutil"
@@ -367,10 +366,4 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	}
 
 	return err
-}
-
-func GetLengthInBytes(length int) []byte {
-	lengthBytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(lengthBytes, cast.ToUint16(length))
-	return lengthBytes
 }
