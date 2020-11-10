@@ -190,28 +190,28 @@ func (a *App) configureLogs(stdOut, logFile bool) error {
 }
 
 func (a *App) start() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-tenantapp-service-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-tenantapp-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-tenantapp-service-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-tenantapp-service"}, os.Environ())
 }
 
 func (a *App) stop() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-tenantapp-service-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-tenantapp-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-tenantapp-service-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-tenantapp-service"}, os.Environ())
 }
 
 func (a *App) status() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-tenantapp-service-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-tenantapp-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-tenantapp-service-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-tenantapp-service"}, os.Environ())
 }
