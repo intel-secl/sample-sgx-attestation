@@ -16,7 +16,6 @@ const (
 
 	// service remove command
 	ServiceRemoveCmd           = "systemctl disable " + SystemCtlUnit
-	VerifyQuote                = "/verifyQuote"
 	DefaultTenantAppListenHost = "127.0.0.1"
 )
 

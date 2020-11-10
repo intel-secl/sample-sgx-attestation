@@ -65,7 +65,7 @@ func (a *App) handleConnection(c net.Conn) {
 	c.Write([]byte(base64.StdEncoding.EncodeToString(controllers.MarshalResponse(*resp)) + constants.EndLine))
 }
 
-func (a *App) StartServer() error {
+func (a *App) startServer() error {
 	defaultLog.Trace("app:startServer() Entering")
 	defer defaultLog.Trace("app:startServer() Leaving")
 
