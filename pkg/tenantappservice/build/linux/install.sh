@@ -5,7 +5,7 @@ SERVICE_USERNAME=sgx-tenantapp-service
 APP_LIB=libapp.so
 ENCLAVE_LIB=libenclave.so
 
-if [[ $EUID -ne 0 ]]; then 
+if [[ $EUID -ne 0 ]]; then
     echo "This installer must be run as root"
     exit 1
 fi
@@ -50,6 +50,14 @@ ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 chmod 755 $LOG_PATH
 chmod g+s $LOG_PATH
 
+# Install systemd script
+cp ${COMPONENT_NAME}.service $PRODUCT_HOME && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME/${COMPONENT_NAME}.service && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME
+
+# Enable systemd service
+systemctl disable ${COMPONENT_NAME}.service > /dev/null 2>&1
+systemctl enable $PRODUCT_HOME/${COMPONENT_NAME}.service
+systemctl daemon-reload
+
 auto_install() {
   local component=${1}
   local cprefix=${2}
@@ -58,7 +66,7 @@ auto_install() {
   yum -y install $yum_packages
 }
 
-# find .env file 
+# find .env file
 echo PWD IS $(pwd)
 if [ -f ~/${COMPONENT_NAME}.env ]; then
     echo Reading Installation options from `realpath ~/${COMPONENT_NAME}.env`
@@ -74,17 +82,27 @@ if [ -z $env_file ]; then
 fi
 
 # check if SGXTENANTAPPSERVICE_NOSETUP is defined
-if [ "${SGXAPP_NOSETUP}" == "true" ]; then
+if [ "${SGXTENANTAPPSERVICE_NOSETUP}" == "true" ]; then
     echo "SGXTENANTAPPSERVICE_NOSETUP is true, skipping setup"
     echo "Run \"$COMPONENT_NAME setup all\" for manual setup"
     echo "Installation completed successfully!"
-else 
+else
     $COMPONENT_NAME setup -f $env_file
     SETUPRESULT=$?
-    chown -R sgx-tenantapp-service:sgx-tenantapp-service "$CONFIG_PATH"
+    chown -R $SERVICE_USERNAME:$SERVICE_USERNAME "$CONFIG_PATH"
     if [ ${SETUPRESULT} == 0 ]; then
+        systemctl start $COMPONENT_NAME
+        echo "Waiting for daemon to settle down before checking status"
+        sleep 3
+        systemctl status $COMPONENT_NAME 2>&1 > /dev/null
+        if [ $? != 0 ]; then
+            echo "Installation completed with Errors - $COMPONENT_NAME daemon not started."
+            echo "Please check errors in syslog using \`journalctl -u $COMPONENT_NAME\`"
+            exit 1
+        fi
+        echo "$COMPONENT_NAME daemon is running"
         echo "Installation completed successfully!"
-    else 
+    else
         echo "Installation completed with errors"
     fi
 fi
