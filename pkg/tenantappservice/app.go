@@ -66,6 +66,21 @@ func (a *App) Run(args []string) error {
 	case "version", "--version", "-v":
 		a.printVersion()
 		return nil
+	case "start":
+		if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.start()
+	case "stop":
+		if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.stop()
+	case "status":
+		if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.status()
 	case "run":
 		if len(args) != 2 {
 			return errInvalidCmd
