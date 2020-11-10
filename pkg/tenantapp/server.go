@@ -6,6 +6,7 @@ package tenantapp
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp/controller"
@@ -27,15 +28,22 @@ func (a *TenantServiceApp) handleConnection(c net.Conn) {
 	defer c.Close()
 
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
-	rawData, err := bufio.NewReader(c).ReadBytes('\n')
+	b64Req, err := bufio.NewReader(c).ReadBytes('\n')
 	if err != nil {
-		fmt.Println(err)
+		defaultLog.WithError(err).Errorf("server:handleConnection failed to read request body")
 		return
 	}
 
 	sh := controller.SocketHandler{Config: a.Config}
 
-	taRequest := controllers.UnmarshalRequest(rawData)
+	// base64 decode the request
+	rawReq, err := base64.StdEncoding.DecodeString(string(b64Req))
+	if err != nil {
+		defaultLog.WithError(err).Errorf("server:handleConnection request base64 decode failed")
+		return
+	}
+
+	taRequest := controllers.UnmarshalRequest(rawReq)
 
 	switch taRequest.RequestType {
 	case constants.ReqTypeConnect:
@@ -49,9 +57,12 @@ func (a *TenantServiceApp) handleConnection(c net.Conn) {
 
 	if err != nil {
 		defaultLog.WithError(err).Error("server:handleConnection Error processing request")
+		return
 	}
-	c.Write(controllers.MarshalResponse(*resp))
-	c.Write([]byte(constants.EndLine))
+
+	defaultLog.Print("server:handleConnection Sending response")
+	// send encoded response
+	c.Write([]byte(base64.StdEncoding.EncodeToString(controllers.MarshalResponse(*resp)) + constants.EndLine))
 }
 
 func (a *TenantServiceApp) StartServer() error {

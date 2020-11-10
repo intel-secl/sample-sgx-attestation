@@ -6,6 +6,7 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
@@ -32,16 +33,21 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 	}
 	defer conn.Close()
 
+	// encode to base64 prior to transmission
+	_msg := base64.StdEncoding.EncodeToString(msg)
+
 	// send to server
-	conn.Write(msg)
-	conn.Write([]byte(constants.EndLine))
-	log.Printf("Send: %s", msg)
+	conn.Write([]byte(_msg + constants.EndLine))
+	log.Printf("Send: %s", _msg)
 
 	// read from server
 	var buf bytes.Buffer
 	io.Copy(&buf, conn)
 	fmt.Println("total response size:", buf.Len())
-	response := buf.Bytes()
+	response, err := base64.StdEncoding.DecodeString(string(buf.Bytes()))
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("Receive: %s", string(response))
 	return response, err
 }
@@ -59,11 +65,16 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	var connectRequest []byte
 	connectRequest = append(connectRequest, requestType)
+	defaultLog.Debugf("MarshalRequest: requestType - %d", requestType)
 	connectRequest = append(connectRequest, GetLengthInBytes(len(params))...)
+	defaultLog.Debugf("MarshalRequest: Number of payloads - %d", len(params))
 	for paramType, paramValue := range params {
 		connectRequest = append(connectRequest, paramType)
+		defaultLog.Debugf("MarshalRequest: paramType - %d", len(params))
 		connectRequest = append(connectRequest, GetLengthInBytes(len(paramValue))...)
+		defaultLog.Debugf("MarshalRequest: ParamLength - %d", len(paramValue))
 		connectRequest = append(connectRequest, paramValue...)
+		defaultLog.Debugf("MarshalRequest: Payload value - %s", paramValue)
 	}
 	return connectRequest
 }
