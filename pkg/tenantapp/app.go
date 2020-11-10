@@ -2,9 +2,15 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package tenantapp
+package main
 
 import (
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"syscall"
+
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/pkg/errors"
@@ -13,13 +19,11 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	commLogInt "intel/isecl/lib/common/v3/log/setup"
-	"io"
-	"os"
 )
 
 var errInvalidCmd = errors.New("Invalid input after command")
 
-type TenantServiceApp struct {
+type App struct {
 	HomeDir        string
 	ConfigDir      string
 	LogDir         string
@@ -35,7 +39,7 @@ type TenantServiceApp struct {
 	SecLogWriter  io.Writer
 }
 
-func (a *TenantServiceApp) Run(args []string) error {
+func (a *App) Run(args []string) error {
 	/*	defer func() {
 		if err := recover(); err != nil {
 			defaultLog.Errorf("Panic occurred: %+v", err)
@@ -62,35 +66,35 @@ func (a *TenantServiceApp) Run(args []string) error {
 	}
 }
 
-func (a *TenantServiceApp) consoleWriter() io.Writer {
+func (a *App) consoleWriter() io.Writer {
 	if a.ConsoleWriter != nil {
 		return a.ConsoleWriter
 	}
 	return os.Stdout
 }
 
-func (a *TenantServiceApp) errorWriter() io.Writer {
+func (a *App) errorWriter() io.Writer {
 	if a.ErrorWriter != nil {
 		return a.ErrorWriter
 	}
 	return os.Stderr
 }
 
-func (a *TenantServiceApp) secLogWriter() io.Writer {
+func (a *App) secLogWriter() io.Writer {
 	if a.SecLogWriter != nil {
 		return a.SecLogWriter
 	}
 	return os.Stdout
 }
 
-func (a *TenantServiceApp) logWriter() io.Writer {
+func (a *App) logWriter() io.Writer {
 	if a.LogWriter != nil {
 		return a.LogWriter
 	}
 	return os.Stderr
 }
 
-func (a *TenantServiceApp) configuration() *config.Configuration {
+func (a *App) configuration() *config.Configuration {
 	if a.Config != nil {
 		return a.Config
 	}
@@ -103,7 +107,7 @@ func (a *TenantServiceApp) configuration() *config.Configuration {
 	return nil
 }
 
-func (a *TenantServiceApp) configureLogs(stdOut, logFile bool) error {
+func (a *App) configureLogs(stdOut, logFile bool) error {
 	var ioWriterDefault io.Writer
 	ioWriterDefault = a.logWriter()
 	if stdOut {
@@ -127,4 +131,31 @@ func (a *TenantServiceApp) configureLogs(stdOut, logFile bool) error {
 	secLog.Info(commLogMsg.LogInit)
 	defaultLog.Info(commLogMsg.LogInit)
 	return nil
+}
+
+func (a *App) start() error {
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-tenant-app-service"`)
+	systemctl, err := exec.LookPath("systemctl")
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-tenant-app-service"}, os.Environ())
+}
+
+func (a *App) stop() error {
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-tenant-app-service"`)
+	systemctl, err := exec.LookPath("systemctl")
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-tenant-app-service"}, os.Environ())
+}
+
+func (a *App) status() error {
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-tenant-app-service"`)
+	systemctl, err := exec.LookPath("systemctl")
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-tenant-app-service"}, os.Environ())
 }

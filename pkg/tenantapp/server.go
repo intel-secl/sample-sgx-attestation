@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package tenantapp
+package main
 
 import (
 	"bufio"
@@ -22,7 +22,7 @@ import (
 var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
 
-func (a *TenantServiceApp) handleConnection(c net.Conn) {
+func (a *App) handleConnection(c net.Conn) {
 	var resp *domain.TenantAppResponse
 
 	defer c.Close()
@@ -65,7 +65,7 @@ func (a *TenantServiceApp) handleConnection(c net.Conn) {
 	c.Write([]byte(base64.StdEncoding.EncodeToString(controllers.MarshalResponse(*resp)) + constants.EndLine))
 }
 
-func (a *TenantServiceApp) StartServer() error {
+func (a *App) StartServer() error {
 	defaultLog.Trace("app:startServer() Entering")
 	defer defaultLog.Trace("app:startServer() Leaving")
 

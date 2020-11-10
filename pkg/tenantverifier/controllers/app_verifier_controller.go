@@ -336,7 +336,8 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	defaultLog.Printf("Quote policy has values MREnclaveField = %s | MRSignerField = %s | CpuSvnField = %s",
 		mreValue, mrSignerValue, cpusvnValue)
 
-	// for standalone mode, pass quote to the SQVS stub
+	// for standalone mode, we extract the fields from the quote and compare
+	// against a subset of the fields in the report
 	parsedBlob := parser.ParseSkcQuoteBlob(qData)
 	if parsedBlob == nil {
 		return errors.New("controllers/app_verifier_controller:verifyQuote() Error parsing quote")
@@ -360,7 +361,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	}
 
 	if err != nil {
-		defaultLog.Printf("Quote policy has values MREnclaveField = %s | MRSignerField = %s | CpuSvnField = %s",
+		defaultLog.Printf("Actual quote has values MREnclaveField = %s | MRSignerField = %s | CpuSvnField = %s",
 			mreValue, mrSignerValue, cpusvnValue)
 	}
 

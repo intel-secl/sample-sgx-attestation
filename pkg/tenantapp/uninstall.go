@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package tenantapp
+package main
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	e "intel/isecl/lib/common/v3/exec"
 )
 
-func (a *TenantServiceApp) executablePath() string {
+func (a *App) executablePath() string {
 	if a.ExecutablePath != "" {
 		return a.ExecutablePath
 	}
@@ -24,42 +24,42 @@ func (a *TenantServiceApp) executablePath() string {
 	return exc
 }
 
-func (a *TenantServiceApp) homeDir() string {
+func (a *App) homeDir() string {
 	if a.HomeDir != "" {
 		return a.HomeDir
 	}
 	return constants.HomeDir
 }
 
-func (a *TenantServiceApp) configDir() string {
+func (a *App) configDir() string {
 	if a.ConfigDir != "" {
 		return a.ConfigDir
 	}
 	return constants.ConfigDir
 }
 
-func (a *TenantServiceApp) logDir() string {
+func (a *App) logDir() string {
 	if a.LogDir != "" {
 		return a.LogDir
 	}
 	return constants.LogDir
 }
 
-func (a *TenantServiceApp) execLinkPath() string {
+func (a *App) execLinkPath() string {
 	if a.ExecLinkPath != "" {
 		return a.ExecLinkPath
 	}
 	return constants.ExecLinkPath
 }
 
-func (a *TenantServiceApp) runDirPath() string {
+func (a *App) runDirPath() string {
 	if a.RunDirPath != "" {
 		return a.RunDirPath
 	}
 	return constants.RunDirPath
 }
 
-func (a *TenantServiceApp) uninstall(purge bool) error {
+func (a *App) uninstall(purge bool) error {
 	fmt.Println("Uninstalling Service Service")
 	// remove service
 	_, _, err := e.RunCommandWithTimeout(constants.ServiceRemoveCmd, 5)
@@ -101,7 +101,7 @@ func (a *TenantServiceApp) uninstall(purge bool) error {
 	if err != nil {
 		defaultLog.WithError(err).Error("error removing home dir")
 	}
-	fmt.Fprintln(a.consoleWriter(), "Tenant TenantServiceApp Service uninstalled")
+	fmt.Fprintln(a.consoleWriter(), "App Service uninstalled")
 	a.stop()
 	return nil
 }
