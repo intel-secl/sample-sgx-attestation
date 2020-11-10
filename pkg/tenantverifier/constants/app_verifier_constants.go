@@ -55,9 +55,9 @@ const (
 	DefaultStandAloneMode = true
 )
 
-// server costants
+// server constants
 const (
-	DefaultAppListenerPort   = 999
+	DefaultAppListenerPort   = 9999
 	DefaultReadTimeout       = 30 * time.Second
 	DefaultReadHeaderTimeout = 10 * time.Second
 	DefaultWriteTimeout      = 30 * time.Second

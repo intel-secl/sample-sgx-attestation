@@ -47,7 +47,7 @@ const (
 
 // server constants
 const (
-	DefaultAppListenerPort = 999
+	DefaultAppListenerPort = 9999
 )
 
 // log constants
