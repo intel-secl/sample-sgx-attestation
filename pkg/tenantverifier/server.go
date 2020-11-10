@@ -6,12 +6,10 @@ package main
 
 import (
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantapp"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
 	"github.com/pkg/errors"
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -34,17 +32,6 @@ func (a *App) startServer() error {
 	}
 
 	defaultLog.Info("Starting Tenant App Verifier server")
-
-	tenantApp := tenantapp.TenantServiceApp{
-		LogWriter: os.Stdout,
-		Config:    c,
-	}
-	// dispatch Tenant App service
-	err := tenantApp.StartServer()
-	if err != nil {
-		defaultLog.WithError(err).Errorf("app:startServer() Error starting TenantApp")
-		return err
-	}
 
 	// start the quote verification
 	verifyController := controllers.AppVerifierController{
