@@ -27,8 +27,12 @@ func (a *App) startServer() error {
 		return errors.New("Failed to load configuration")
 	}
 	// initialize log
-	if err := a.configureLogs(c.Log.EnableStdout, false); err != nil {
+	if err := a.configureLogs(c.Log.EnableStdout, true); err != nil {
 		return err
+	}
+
+	if !c.StandAloneMode {
+		secLog.Fatal(errors.New("Non-standalone mode is not supported in this release"))
 	}
 
 	defaultLog.Info("Starting Tenant App Verifier server")

@@ -75,6 +75,10 @@ func (a *App) startServer() error {
 		return errors.New("Failed to load configuration")
 	}
 
+	if !c.StandAloneMode {
+		secLog.Fatal(errors.New("Non-standalone mode is not supported in this release"))
+	}
+
 	defaultLog.Info("Starting TenantAppService")
 
 	// check if socket can be opened up
