@@ -13,9 +13,9 @@ import (
 // this func sets the default values for viper keys
 func init() {
 	// set default values for stand alone mode
-	viper.SetDefault("stand-alone-mode", constants.DefaultStandAloneMode)
-	viper.SetDefault("tenant-service-host", constants.DefaultTenantAppListenHost)
-	viper.SetDefault("tenant-service-port", constants.DefaultAppListenerPort)
+	viper.SetDefault("standalone-mode", constants.DefaultStandAloneMode)
+	viper.SetDefault("tenantservice-host", constants.DefaultTenantAppListenHost)
+	viper.SetDefault("tenantservice-port", constants.DefaultAppListenerPort)
 
 	// set default values for log
 	viper.SetDefault("log-max-length", constants.DefaultLogEntryMaxlength)
@@ -26,9 +26,9 @@ func init() {
 func defaultConfig() *config.Configuration {
 	// support old service env
 	return &config.Configuration{
-		StandAloneMode:    viper.GetBool("stand-alone-mode"),
-		TenantServiceHost: viper.GetString("tenant-service-host"),
-		TenantServicePort: viper.GetInt("tenant-service-port"),
+		StandAloneMode:    viper.GetBool("standalone-mode"),
+		TenantServiceHost: viper.GetString("tenantservice-host"),
+		TenantServicePort: viper.GetInt("tenantservice-port"),
 
 		Log: config.LogConfig{
 			MaxLength:    viper.GetInt("log-max-length"),

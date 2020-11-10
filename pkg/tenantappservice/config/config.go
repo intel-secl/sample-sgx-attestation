@@ -13,9 +13,9 @@ import (
 )
 
 type Configuration struct {
-	StandAloneMode    bool      `yaml:"stand-alone-mode" mapstructure:"stand-alone-mode"`
-	TenantServiceHost string    `yaml:"tenant-service-host" mapstructure:"tenant-service-host"`
-	TenantServicePort int       `yaml:"tenant-service-port" mapstructure:"tenant-service-port"`
+	StandAloneMode    bool      `yaml:"standalone-mode" mapstructure:"standalone-mode"`
+	TenantServiceHost string    `yaml:"tenantservice-host" mapstructure:"tenantservice-host"`
+	TenantServicePort int       `yaml:"tenantservice-port" mapstructure:"tenantservice-port"`
 	Log               LogConfig `yaml:"log" mapstructure:"log"`
 }
 

@@ -111,9 +111,9 @@ func (a *App) Run(args []string) error {
 		viper.AutomaticEnv()
 		if a.configuration() == nil {
 			a.Config = defaultConfig()
-			err = a.Config.Save(constants.DefaultConfigFilePath)
 		}
 
+		err = a.Config.Save(constants.DefaultConfigFilePath)
 		if err != nil {
 			fmt.Println("Error running setup: ", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
