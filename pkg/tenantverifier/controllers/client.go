@@ -42,7 +42,7 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 	// read from server
 	var buf bytes.Buffer
 	io.Copy(&buf, conn)
-	defaultLog.Debugf("total response size:", buf.Len())
+	defaultLog.Debugf("total response size: %d", buf.Len())
 	encResponse := string(buf.Bytes())
 	response, err := base64.StdEncoding.DecodeString(encResponse)
 	if err != nil {
