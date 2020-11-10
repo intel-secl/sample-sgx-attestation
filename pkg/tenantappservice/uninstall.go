@@ -73,11 +73,7 @@ func (a *App) uninstall(purge bool) error {
 	if err != nil {
 		defaultLog.WithError(err).Error("error removing executable")
 	}
-	fmt.Println("removing : ", a.runDirPath())
-	err = os.Remove(a.runDirPath())
-	if err != nil {
-		defaultLog.WithError(err).Error("error removing ", a.runDirPath())
-	}
+
 	fmt.Println("removing : ", a.execLinkPath())
 	err = os.Remove(a.execLinkPath())
 	if err != nil {
