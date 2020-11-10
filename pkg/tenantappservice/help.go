@@ -6,7 +6,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version"
 )
 
 const helpStr = `Usage:
@@ -39,5 +39,5 @@ func (a *App) printUsageWithError(err error) {
 }
 
 func (a *App) printVersion() {
-	fmt.Fprintf(a.consoleWriter(), "SGX App Verifier Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
+	fmt.Fprintf(a.consoleWriter(), "SGX Tenant App Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
 }
