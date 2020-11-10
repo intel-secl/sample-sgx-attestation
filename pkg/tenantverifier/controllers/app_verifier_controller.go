@@ -118,7 +118,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		}
 		wrappedSWKRequest := MarshalRequest(constants.ReqTypePubkeyWrappedSWK, params)
 
-		defaultLog.Printf("Sending request to send Wrapped SWK to Tenant App")
+		defaultLog.Debugf("Sending request to send Wrapped SWK to Tenant App")
 		wrappedSWKResponseBytes, err := tenantAppClient.socketRequest(wrappedSWKRequest)
 		if err != nil {
 			defaultLog.WithError(err).Errorf("Error while getting response for wrapped SWK from Tenant app")

@@ -13,7 +13,6 @@ import (
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/spf13/cast"
 	"io"
-	"log"
 	"net"
 )
 
@@ -38,18 +37,18 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 
 	// send to server
 	conn.Write([]byte(_msg + constants.EndLine))
-	log.Printf("Send: %s", _msg)
+	defaultLog.Debugf("Write to socket: %s", _msg)
 
 	// read from server
 	var buf bytes.Buffer
 	io.Copy(&buf, conn)
-	fmt.Println("total response size:", buf.Len())
+	defaultLog.Debugf("total response size:", buf.Len())
 	encResponse := string(buf.Bytes())
 	response, err := base64.StdEncoding.DecodeString(encResponse)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Receive: %s", encResponse)
+	defaultLog.Debugf("Receive response: %s", encResponse)
 	return response, err
 }
 
@@ -75,7 +74,7 @@ func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 		connectRequest = append(connectRequest, GetLengthInBytes(len(paramValue))...)
 		defaultLog.Debugf("MarshalRequest: ParamLength - %d", len(paramValue))
 		connectRequest = append(connectRequest, paramValue...)
-		defaultLog.Debugf("MarshalRequest: Payload value - %s", paramValue)
+		defaultLog.Debugf("MarshalRequest: Payload value base64 - %s", base64.StdEncoding.EncodeToString(paramValue))
 	}
 	return connectRequest
 }
@@ -84,12 +83,18 @@ func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	var respBytes []byte
 	respBytes = append(respBytes, resp.RequestType)
+	defaultLog.Debugf("MarshalResponse: requestType - %d", resp.RequestType)
 	respBytes = append(respBytes, resp.RespCode)
+	defaultLog.Debugf("MarshalResponse: Response Code - %d", resp.RespCode)
 	respBytes = append(respBytes, GetLengthInBytes(int(resp.ParamLength))...)
+	defaultLog.Debugf("MarshalResponse: Number of payloads - %d", resp.ParamLength)
 	for _, paramValue := range resp.Elements {
 		respBytes = append(respBytes, paramValue.Type)
+		defaultLog.Debugf("MarshalResponse: paramType - %d", paramValue.Type)
 		respBytes = append(respBytes, GetLengthInBytes(int(paramValue.Length))...)
+		defaultLog.Debugf("MarshalResponse: ParamLength - %d", int(paramValue.Length))
 		respBytes = append(respBytes, paramValue.Payload...)
+		defaultLog.Debugf("MarshalResponse: Payload value base64 - %s", base64.StdEncoding.EncodeToString(paramValue.Payload))
 	}
 
 	return respBytes
