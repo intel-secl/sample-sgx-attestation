@@ -17,7 +17,6 @@ type Configuration struct {
 	TenantServiceHost string    `yaml:"tenant-service-host" mapstructure:"tenant-service-host"`
 	TenantServicePort int       `yaml:"tenant-service-port" mapstructure:"tenant-service-port"`
 	Log               LogConfig `yaml:"log" mapstructure:"log"`
-	TrustedRootCAPath string    `yaml:"trusted-root-ca-path" mapstructure:"trusted-root-ca-path"`
 }
 
 type LogConfig struct {
@@ -30,7 +29,7 @@ type LogConfig struct {
 func init() {
 	viper.SetConfigName(constants.ConfigFile)
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(constants.ConfigDir)
 }
 
 // config is application specific
