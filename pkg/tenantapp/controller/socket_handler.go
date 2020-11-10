@@ -32,6 +32,11 @@ var (
 	ePubKey           crypto.PublicKey
 )
 
+func init() {
+	// initialize enclave
+	enclaveInitStatus = C.init(C.bool(true))
+}
+
 type SocketHandler struct {
 	Config *config.Configuration
 }
@@ -42,8 +47,6 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 	var resp domain.TenantAppResponse
 	var err error
 
-	// initialize enclave
-	enclaveInitStatus = C.init(C.bool(sh.Config.StandAloneMode))
 	if enclaveInitStatus != 0 {
 		return nil, errors.Errorf("controller/socket_handler:HandleConnect Error initializing enclave - error code %d", enclaveInitStatus)
 	}
@@ -133,12 +136,6 @@ func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*do
 	var resp domain.TenantAppResponse
 	var err error
 
-	// initialize enclave
-	enclaveInitStatus = C.init(C.bool(sh.Config.StandAloneMode))
-	if enclaveInitStatus != 0 {
-		return nil, errors.Errorf("controller/socket_handler:HandleConnect Error initializing enclave - error code %d", enclaveInitStatus)
-	}
-
 	resp.RequestType = req.RequestType
 
 	// make sure it is a ReqTypePubkeyWrappedSWK request
@@ -179,12 +176,6 @@ func (sh SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*do
 
 	var resp domain.TenantAppResponse
 	var err error
-
-	// initialize enclave
-	enclaveInitStatus = C.init(C.bool(sh.Config.StandAloneMode))
-	if enclaveInitStatus != 0 {
-		return nil, errors.Errorf("controller/socket_handler:HandleConnect Error initializing enclave - error code %d", enclaveInitStatus)
-	}
 
 	resp.RequestType = req.RequestType
 
