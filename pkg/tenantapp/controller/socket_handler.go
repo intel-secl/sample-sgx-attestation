@@ -85,7 +85,7 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 
 	// since we are not getting the enclave public key in the response,
 	// we must generate it
-	_, ePubKey, err = crypt.GenerateKeyPair("rsa", 384)
+	_, ePubKey, err = crypt.GenerateKeyPair(constants.DefaultKeyAlgorithm, constants.DefaultKeyLength)
 	if err != nil {
 		return nil, errors.Wrap(err, "controller/socket_handler:HandleConnect Failed to fetch enclave key")
 	}
@@ -147,7 +147,7 @@ func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*do
 		var pubKeyWrappedSwk string
 		// extract the params
 		for _, paramValue := range req.Elements {
-			if paramValue.Type == constants.ReqTypePubkeyWrappedSWK {
+			if paramValue.Type == constants.ParamTypePubkeyWrappedSwk {
 				pubKeyWrappedSwk = string(paramValue.Payload)
 			}
 		}
@@ -188,7 +188,7 @@ func (sh SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*do
 		var swkWrappedSecret string
 		// extract the params
 		for _, paramValue := range req.Elements {
-			if paramValue.Type == constants.ParamTypePubkeyWrappedSwk {
+			if paramValue.Type == constants.ParamTypeSwkWrappedSecret {
 				swkWrappedSecret = string(paramValue.Payload)
 			}
 		}

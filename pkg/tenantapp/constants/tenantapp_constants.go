@@ -5,14 +5,12 @@
 
 package constants
 
-import "time"
-
 // general SGX APP VERIFIER constants
 const (
-	ServiceName     = "SGX Tenant App Service"
-	ServiceDir      = "sgx-tenant-app-service/"
-	ServiceUserName = "sgx-tenant-app-service"
-	SystemCtlUnit   = "sgx-tenant-app-service"
+	ServiceName     = "SGX Sample Tenant App Service"
+	ServiceDir      = "sgx-tenantapp-service/"
+	ServiceUserName = "sgx-tenantapp-service"
+	SystemCtlUnit   = "sgx-tenantapp-service"
 	TenantUsername  = "tenantusername"
 	TenantPassword  = "tenantpassw0rd"
 
@@ -35,18 +33,13 @@ const (
 	ConfigDir             = "/etc/" + ServiceDir
 	DefaultConfigFilePath = ConfigDir + "config.yml"
 	ConfigFile            = "config"
-	SgxQuotePolicyPath    = ConfigDir + "sgx-quote.dat"
 )
 
 // tls constants
 const (
 	// default locations for tls certificate and key
-	DefaultTLSKeyFile                  = ConfigDir + "tls.key"
-	DefaultTLSCertFile                 = ConfigDir + "tls-cert.pem"
-	DefaultKeyAlgorithm                = "rsa"
-	DefaultKeyLength                   = 3072
-	DefaultSecretLength                = 256
-	DefaultSelfSignedCertValidityYears = 1
+	DefaultKeyAlgorithm = "rsa"
+	DefaultKeyLength    = 3072
 )
 
 // general constants for stand alone mode
@@ -54,14 +47,9 @@ const (
 	DefaultStandAloneMode = true
 )
 
-// server costants
+// server constants
 const (
-	DefaultAppListenerPort   = 999
-	DefaultReadTimeout       = 30 * time.Second
-	DefaultReadHeaderTimeout = 10 * time.Second
-	DefaultWriteTimeout      = 30 * time.Second
-	DefaultIdleTimeout       = 10 * time.Second
-	DefaultMaxHeaderBytes    = 1 << 20
+	DefaultAppListenerPort = 999
 )
 
 // log constants
@@ -105,12 +93,4 @@ const (
 
 const (
 	EndLine = "\n"
-)
-
-// SGX Policy
-const (
-	MREnclaveField  = "MREnclave"
-	MRSignerField   = "MRSigner"
-	CpuSvnField     = "CPU_SVN"
-	PolicyFileDelim = ":"
 )
