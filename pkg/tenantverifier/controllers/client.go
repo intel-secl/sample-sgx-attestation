@@ -44,11 +44,12 @@ func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	io.Copy(&buf, conn)
 	fmt.Println("total response size:", buf.Len())
-	response, err := base64.StdEncoding.DecodeString(string(buf.Bytes()))
+	encResponse := string(buf.Bytes())
+	response, err := base64.StdEncoding.DecodeString(encResponse)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Receive: %s", string(response))
+	log.Printf("Receive: %s", encResponse)
 	return response, err
 }
 
