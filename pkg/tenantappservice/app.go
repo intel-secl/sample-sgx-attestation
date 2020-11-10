@@ -6,9 +6,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tasks"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/config"
@@ -20,6 +22,8 @@ import (
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	commLogInt "intel/isecl/lib/common/v3/log/setup"
 )
+
+var errInvalidCmd = errors.New("Invalid input after command")
 
 type App struct {
 	HomeDir        string
@@ -43,6 +47,7 @@ func (a *App) Run(args []string) error {
 			defaultLog.Errorf("Panic occurred: %+v", err)
 		}
 	}()*/
+	var err error
 	if len(args) < 2 {
 		err := errors.New("Invalid usage of " + constants.ServiceName)
 		a.printUsageWithError(err)
@@ -61,7 +66,60 @@ func (a *App) Run(args []string) error {
 	case "version", "--version", "-v":
 		a.printVersion()
 		return nil
+	case "run":
+		if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.startServer()
+	case "uninstall":
+		// the only allowed flag is --purge
+		purge := false
+		if len(args) == 3 {
+			if args[2] != "--purge" {
+				return errors.New("Invalid flag: " + args[2])
+			}
+			purge = true
+		} else if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.uninstall(purge)
+	case "setup":
+		if len(args) < 2 {
+			return errors.New("Invalid usage of setup")
+		}
+		// look for cli flags
+		var ansFile string
+		for i, s := range args {
+			if s == "-f" || s == "--file" {
+				if i+1 < len(args) {
+					ansFile = args[i+1]
+					break
+				} else {
+					return errors.New("Invalid answer file name")
+				}
+			}
+		}
+		// dump answer file to env
+		if ansFile != "" {
+			err := tasks.ReadAnswerFileToEnv(ansFile)
+			if err != nil {
+				return errors.Wrap(err, "Failed to read answer file")
+			}
+		}
+
+		viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+		viper.AutomaticEnv()
+		if a.configuration() == nil {
+			a.Config = defaultConfig()
+			err = a.Config.Save(constants.DefaultConfigFilePath)
+		}
+
+		if err != nil {
+			fmt.Println("Error running setup: ", err)
+			return errors.Wrap(err, "app:Run() Error running setup")
+		}
 	}
+	return nil
 }
 
 func (a *App) consoleWriter() io.Writer {
@@ -132,28 +190,28 @@ func (a *App) configureLogs(stdOut, logFile bool) error {
 }
 
 func (a *App) start() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-tenant-app-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-tenantapp-service-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-tenant-app-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-tenantapp-service-service"}, os.Environ())
 }
 
 func (a *App) stop() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-tenant-app-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-tenantapp-service-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-tenant-app-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-tenantapp-service-service"}, os.Environ())
 }
 
 func (a *App) status() error {
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-tenant-app-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-tenantapp-service-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return err
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-tenant-app-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-tenantapp-service-service"}, os.Environ())
 }
