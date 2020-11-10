@@ -2,19 +2,23 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package controllers
+package lib
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
 	"github.com/spf13/cast"
+	"intel/isecl/lib/common/v3/log"
 	"io"
 	"net"
 )
+
+var defaultLog = log.GetDefaultLogger()
 
 type TenantAppClient struct {
 	address string
@@ -24,7 +28,7 @@ func NewSgxSocketClient(address string) *TenantAppClient {
 	return &TenantAppClient{address: address}
 }
 
-func (client *TenantAppClient) socketRequest(msg []byte) ([]byte, error) {
+func (client *TenantAppClient) SocketRequest(msg []byte) ([]byte, error) {
 	// connect to server
 	conn, err := net.Dial(constants.ProtocolTcp, client.address)
 	if err != nil {
@@ -66,12 +70,12 @@ func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	var connectRequest []byte
 	connectRequest = append(connectRequest, requestType)
 	defaultLog.Debugf("MarshalRequest: requestType - %d", requestType)
-	connectRequest = append(connectRequest, GetLengthInBytes(len(params))...)
+	connectRequest = append(connectRequest, controllers.GetLengthInBytes(len(params))...)
 	defaultLog.Debugf("MarshalRequest: Number of payloads - %d", len(params))
 	for paramType, paramValue := range params {
 		connectRequest = append(connectRequest, paramType)
 		defaultLog.Debugf("MarshalRequest: paramType - %d", len(params))
-		connectRequest = append(connectRequest, GetLengthInBytes(len(paramValue))...)
+		connectRequest = append(connectRequest, controllers.GetLengthInBytes(len(paramValue))...)
 		defaultLog.Debugf("MarshalRequest: ParamLength - %d", len(paramValue))
 		connectRequest = append(connectRequest, paramValue...)
 		defaultLog.Debugf("MarshalRequest: Payload value base64 - %s", base64.StdEncoding.EncodeToString(paramValue))
@@ -86,12 +90,12 @@ func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	defaultLog.Debugf("MarshalResponse: requestType - %d", resp.RequestType)
 	respBytes = append(respBytes, resp.RespCode)
 	defaultLog.Debugf("MarshalResponse: Response Code - %d", resp.RespCode)
-	respBytes = append(respBytes, GetLengthInBytes(int(resp.ParamLength))...)
+	respBytes = append(respBytes, controllers.GetLengthInBytes(int(resp.ParamLength))...)
 	defaultLog.Debugf("MarshalResponse: Number of payloads - %d", resp.ParamLength)
 	for _, paramValue := range resp.Elements {
 		respBytes = append(respBytes, paramValue.Type)
 		defaultLog.Debugf("MarshalResponse: paramType - %d", paramValue.Type)
-		respBytes = append(respBytes, GetLengthInBytes(int(paramValue.Length))...)
+		respBytes = append(respBytes, controllers.GetLengthInBytes(int(paramValue.Length))...)
 		defaultLog.Debugf("MarshalResponse: ParamLength - %d", int(paramValue.Length))
 		respBytes = append(respBytes, paramValue.Payload...)
 		defaultLog.Debugf("MarshalResponse: Payload value base64 - %s", base64.StdEncoding.EncodeToString(paramValue.Payload))

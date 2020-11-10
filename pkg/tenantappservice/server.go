@@ -7,10 +7,10 @@ package main
 import (
 	"bufio"
 	"encoding/base64"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/lib"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/controller"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/domain"
 	"github.com/pkg/errors"
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
@@ -45,7 +45,7 @@ func (a *App) handleConnection(c net.Conn) {
 		return
 	}
 
-	taRequest := controllers.UnmarshalRequest(rawReq)
+	taRequest := lib.UnmarshalRequest(rawReq)
 
 	switch taRequest.RequestType {
 	case constants.ReqTypeConnect:
@@ -63,7 +63,7 @@ func (a *App) handleConnection(c net.Conn) {
 
 	defaultLog.Print("server:handleConnection Sending response")
 	// send base64 encoded response
-	c.Write([]byte(base64.StdEncoding.EncodeToString(controllers.MarshalResponse(*resp)) + constants.EndLine))
+	c.Write([]byte(base64.StdEncoding.EncodeToString(lib.MarshalResponse(*resp)) + constants.EndLine))
 }
 
 func (a *App) startServer() error {
