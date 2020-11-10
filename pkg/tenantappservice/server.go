@@ -88,8 +88,7 @@ func (a *App) startServer() error {
 
 	// Setup signal handlers to gracefully handle termination
 	stop := make(chan os.Signal)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -97,6 +96,9 @@ func (a *App) startServer() error {
 			break
 		}
 
+		if <-stop != nil {
+			break
+		}
 		go a.handleConnection(conn)
 	}
 	<-stop
