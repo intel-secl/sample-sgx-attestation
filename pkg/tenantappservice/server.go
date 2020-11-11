@@ -94,6 +94,7 @@ func (a *App) startServer() error {
 		defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
 		return err
 	}
+	defer l.Close()
 
 	sh := controller.SocketHandler{Config: a.Config}
 	err = sh.EnclaveInit()
@@ -105,7 +106,6 @@ func (a *App) startServer() error {
 	// Setup signal handlers to gracefully handle termination
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGKILL)
-	done := false
 
 	// method invoked upon seeing signal
 	go func() {
@@ -113,14 +113,13 @@ func (a *App) startServer() error {
 		defaultLog.Infof("app:startServer() Received signal %s", s)
 
 		// let's destroy enclave and exit
-		err = sh.EnclaveDestroy()
-		if err != nil {
-			defaultLog.WithError(err).Errorf("app:startServer() Enclave cleanup failed")
-		}
-		done = true
+		sh.EnclaveDestroy()
+
+		secLog.Info(commLogMsg.ServiceStop)
+		os.Exit(0)
 	}()
 
-	for !done {
+	for {
 		conn, err := l.Accept()
 		if err != nil {
 			defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
