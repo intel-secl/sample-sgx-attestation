@@ -28,18 +28,46 @@ var (
 	ePubKey           crypto.PublicKey
 )
 
-func init() {
+func (sh *SocketHandler) EnclaveInit() error {
+	defaultLog.Trace("controller/socket_handler:EnclaveInit Entering")
+	defer defaultLog.Trace("controller/socket_handler:EnclaveInit Leaving")
+
 	// initialize enclave
 	enclaveInitStatus = C.init(C.bool(true))
+
+	if enclaveInitStatus != 0 {
+		return errors.Errorf("controller/socket_handler:EnclaveInit Failed to initialize enclave. Error code: %d", enclaveInitStatus)
+	}
+
+	defaultLog.Info("controller/socket_handler:EnclaveInit Initialized enclave")
+
+	return nil
+}
+
+func (sh *SocketHandler) EnclaveDestroy() error {
+	defaultLog.Trace("controller/socket_handler:EnclaveDestroy Entering")
+	defer defaultLog.Trace("controller/socket_handler:EnclaveDestroy Leaving")
+
+	// destroy enclave
+	enclaveDestroyStatus := C.destroy_Enclave()
+
+	if enclaveDestroyStatus != 0 {
+		return errors.Errorf("controller/socket_handler:EnclaveInit Failed to destroy enclave. Error code: %d", enclaveDestroyStatus)
+	}
+
+	defaultLog.Info("controller/socket_handler:EnclaveInit Destroyed enclave")
+
+	return nil
 }
 
 type SocketHandler struct {
 	Config *config.Configuration
 }
 
-func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
+func (sh *SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
 	defaultLog.Trace("controller/socket_handler:HandleConnect Entering")
 	defer defaultLog.Trace("controller/socket_handler:HandleConnect Leaving")
+
 	var resp domain.TenantAppResponse
 	var err error
 
@@ -125,7 +153,7 @@ func (sh SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Tena
 }
 
 // HandlePubkeyWrappedSWK receives the SWK used for wrapping public key
-func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
+func (sh *SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
 	defaultLog.Trace("controller/socket_handler:HandlePubkeyWrappedSWK Entering")
 	defer defaultLog.Trace("controller/socket_handler:HandlePubkeyWrappedSWK Leaving")
 
@@ -166,7 +194,7 @@ func (sh SocketHandler) HandlePubkeyWrappedSWK(req domain.TenantAppRequest) (*do
 }
 
 // HandleSWKWrappedSecret takes the wrapped secret from verifier app and unwraps it in the enclave
-func (sh SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
+func (sh *SocketHandler) HandleSWKWrappedSecret(req domain.TenantAppRequest) (*domain.TenantAppResponse, error) {
 	defaultLog.Trace("controller/socket_handler:HandleSWKWrappedSecret Entering")
 	defer defaultLog.Trace("controller/socket_handler:HandleSWKWrappedSecret Leaving")
 
