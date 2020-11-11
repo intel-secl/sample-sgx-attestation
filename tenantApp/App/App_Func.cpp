@@ -277,8 +277,8 @@ uint8_t* get_SGX_Quote(int* x) {
 	if (mode ==true) {
 		printf("Getting quote in standalone mode\n");
 		FILE *fptr = NULL;
-		fptr = fopen("quote.dat","rb");
-		if (fptr==NULL) {cout << "cant open the file\n"<< endl; return 0; }
+		fptr = fopen("/tmp/quote.dat","rb");
+		if (fptr==NULL) {cout << "cant open quote.dat file\n"<< endl; return 0; }
 
 		// obtain file size:
 		fseek (fptr, 0 , SEEK_END);

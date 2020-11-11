@@ -189,6 +189,7 @@ all: .config_$(Build_Mode)_$(SGX_ARCH)
 	@$(MAKE) target
 	@cp -f ./app.so /usr/lib64/libapp.so
 	@cp -f $(Signed_Enclave_Name) /usr/lib64/$(Lib_Signed_Enclave_Name)
+	@cp -f quote.dat /tmp/
 	@echo "COPY-------------------------------------=>  $@"
 	@$(MAKE) targetApp
 
