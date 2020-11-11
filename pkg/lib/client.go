@@ -119,7 +119,7 @@ func UnmarshalRequest(req []byte) domain.TenantAppRequest {
 	var curByte uint16 = 3
 	for i := 0; i < int(tar.ParamLength); i++ {
 		var te domain.TenantAppMessageElement
-		te.Type = req[i]
+		te.Type = req[curByte]
 		defaultLog.Debugf("UnmarshalRequest: Element %d | Type - %d", i, te.Type)
 		curByte += 1
 		te.Length = binary.BigEndian.Uint16(req[curByte : curByte+2])
