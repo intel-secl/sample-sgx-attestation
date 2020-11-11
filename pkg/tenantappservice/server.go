@@ -109,7 +109,7 @@ func (a *App) startServer() error {
 	// method invoked upon seeing signal
 	go func() {
 		s := <-stop
-		defaultLog.Info("app:startServer() Received signal %s", s)
+		defaultLog.Infof("app:startServer() Received signal %s", s)
 
 		// let's destroy enclave and exit
 		err = sh.EnclaveDestroy()

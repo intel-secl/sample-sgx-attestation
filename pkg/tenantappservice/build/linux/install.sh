@@ -2,8 +2,8 @@
 
 COMPONENT_NAME=sgx-tenantapp-service
 SERVICE_USERNAME=sgx-tenantapp-service
-APP_LIB=libapp.so
-ENCLAVE_LIB=libenclave.so
+APP_LIB=app.so
+ENCLAVE_LIB=enclave.signed.so
 
 if [[ $EUID -ne 0 ]]; then
     echo "This installer must be run as root"
@@ -33,6 +33,13 @@ for directory in $BIN_PATH $LOG_PATH $CONFIG_PATH; do
   chmod 700 $directory
   chmod g+s $directory
 done
+
+
+cp -f $APP_LIB $LIB_PATH/libapp.so
+cp -f $ENCLAVE_LIB $LIB_PATH/libenclave.so
+chmod 775 ${LIB_PATH}/libapp.so
+chmod 775 ${LIB_PATH}/libenclave.so
+ldconfig
 
 chown -R $SERVICE_USERNAME:$SERVICE_USERNAME $CONFIG_PATH
 chmod -R 700 $CONFIG_PATH
