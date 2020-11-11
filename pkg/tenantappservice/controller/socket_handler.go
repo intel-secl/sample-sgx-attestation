@@ -92,30 +92,31 @@ func (sh *SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Ten
 	if username != constants.TenantUsername || password != constants.TenantPassword {
 		resp.RespCode = constants.ResponseCodeFailure
 		err = errors.New("controller/socket_handler:HandleConnect Invalid credentials")
-	}
-
-	defaultLog.Print("Getting quote from the Tenant App Enclave")
-
-	var qSize C.int
-	var qBytes []byte
-	var qPtr *C.u_int8_t
-	qPtr = C.get_SGX_Quote(&qSize)
-	qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
-
-	defaultLog.Printf("Fetched quote is of length %d", len(qBytes))
-	if qBytes == nil {
-		resp.RespCode = constants.ResponseCodeFailure
-		err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant App Quote")
 	} else {
-		resp.RespCode = constants.ResponseCodeSuccess
-		resp.Elements = []domain.TenantAppMessageElement{
-			{
-				Type:    constants.ResponseElementTypeSGXQuote,
-				Length:  uint16(len(qBytes)),
-				Payload: qBytes,
-			},
+
+		defaultLog.Print("Getting quote from the Tenant App Enclave")
+
+		var qSize C.int
+		var qBytes []byte
+		var qPtr *C.u_int8_t
+		qPtr = C.get_SGX_Quote(&qSize)
+		qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
+
+		defaultLog.Printf("Fetched quote is of length %d", len(qBytes))
+		if qBytes == nil {
+			resp.RespCode = constants.ResponseCodeFailure
+			err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant App Quote")
+		} else {
+			resp.RespCode = constants.ResponseCodeSuccess
+			resp.Elements = []domain.TenantAppMessageElement{
+				{
+					Type:    constants.ResponseElementTypeSGXQuote,
+					Length:  uint16(len(qBytes)),
+					Payload: qBytes,
+				},
+			}
+			resp.ParamLength = uint16(len(resp.Elements))
 		}
-		resp.ParamLength = uint16(len(resp.Elements))
 	}
 
 	return &resp, err
