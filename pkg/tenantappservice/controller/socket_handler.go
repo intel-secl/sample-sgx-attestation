@@ -6,11 +6,7 @@ package controller
 
 // #cgo CFLAGS: -I /opt/intel/sgxsdk/include
 // #cgo LDFLAGS: -L /usr/lib64 -l app
-// #cgo LDFLAGS: -L /usr/lib64 -l sgx_qe3_logic
-// #cgo LDFLAGS: -L /usr/lib64 -l sgx_pce_logic
-// #cgo LDFLAGS: -L /usr/lib64 -l sgx_dcap_ql
-// #cgo LDFLAGS: -L /usr/lib64/ -l sgx_urts
-// #include "App_Func.h"
+// #include "../../../tenantApp/App/App_Func.h"
 import "C"
 
 import (
