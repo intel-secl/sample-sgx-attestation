@@ -18,16 +18,22 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"syscall"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
 
-func (a *App) handleConnection(c net.Conn) {
+func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
+	defaultLog.Trace("app:handleConnection() Entering")
+	defer defaultLog.Trace("app:handleConnection() Leaving")
+
 	var resp *domain.TenantAppResponse
 
 	defer c.Close()
+
+	if sh == nil {
+		defaultLog.Fatalf("server:handleConnection SocketHandler not initialized")
+	}
 
 	defaultLog.Printf("Serving %s\n", c.RemoteAddr().String())
 	b64Req, err := bufio.NewReader(c).ReadBytes('\n')
@@ -35,8 +41,6 @@ func (a *App) handleConnection(c net.Conn) {
 		defaultLog.WithError(err).Errorf("server:handleConnection failed to read request body")
 		return
 	}
-
-	sh := controller.SocketHandler{Config: a.Config}
 
 	// base64 decode the request
 	rawReq, err := base64.StdEncoding.DecodeString(string(b64Req))
@@ -86,27 +90,43 @@ func (a *App) startServer() error {
 	defaultLog.Infof("app:startServer Binding to %s", listenAddr)
 	l, err := net.Listen(constants.ProtocolTcp, listenAddr)
 	if err != nil {
-		err = errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr)
-		defaultLog.Error(err)
+		defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
+		return err
+	}
+
+	sh := controller.SocketHandler{Config: a.Config}
+	err = sh.EnclaveInit()
+	if err != nil {
+		defaultLog.WithError(err).Error("app:startServer() Error initializing enclave")
+		return err
 	}
 
 	// Setup signal handlers to gracefully handle termination
-	stop := make(chan os.Signal)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop)
 	done := false
-	for !done {
-		select {
-		case <-stop:
-			done = true
-		default:
-			conn, err := l.Accept()
-			if err != nil {
-				defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
-				break
-			}
 
-			go a.handleConnection(conn)
+	// method invoked upon seeing signal
+	go func() {
+		s := <-stop
+		defaultLog.Info("app:startServer() Received signal %s", s)
+
+		// let's destroy enclave and exit
+		err = sh.EnclaveDestroy()
+		if err != nil {
+			defaultLog.WithError(err).Errorf("app:startServer() Enclave cleanup failed")
 		}
+		done = true
+	}()
+
+	for !done {
+		conn, err := l.Accept()
+		if err != nil {
+			defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
+			break
+		}
+
+		go a.handleConnection(conn, &sh)
 	}
 
 	secLog.Info(commLogMsg.ServiceStop)
