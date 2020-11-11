@@ -42,10 +42,6 @@ cp $COMPONENT_NAME $BIN_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $BIN_
 chmod 700 $BIN_PATH/*
 ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 
-#cp -f $APP_LIB $ENCLAVE_LIB $LIB_PATH
-#chmod 775 ${LIB_PATH}/${APP_LIB}
-#ldconfig
-
 # make log files world readable
 chmod 755 $LOG_PATH
 chmod g+s $LOG_PATH

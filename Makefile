@@ -13,6 +13,7 @@ verifier-installer: verifier
 	mkdir -p installer out/
 	cp pkg/tenantverifier/out/sgx-app-verifier installer/
 	cp pkg/tenantverifier/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
+	cp pkg/tenantverifier/build/linux/sgx-quote-policy.txt installer/sgx-quote-policy.txt
 	makeself installer out/sgx-app-verifier-$(VERSION).bin "sgx-app-verifier $(VERSION)" ./install.sh
 	rm -rf installer
 
@@ -23,8 +24,6 @@ tenantappservice-installer: tenantappservice
 	mkdir -p installer out/
 	cp pkg/tenantappservice/out/sgx-tenantapp-service installer/
 	cp pkg/tenantappservice/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
-	cp pkg/tenantappservice/build/linux/libapp.so installer/libapp.so
-	cp pkg/tenantappservice/build/linux/libenclave.so installer/libenclave.so
 	cp pkg/tenantappservice/build/linux/sgx-tenantapp-service.service installer/sgx-tenantapp-service.service
 	makeself installer out/sgx-tenantapp-service-$(VERSION).bin "sgx-tenantapp-service $(VERSION)" ./install.sh
 	rm -rf installer

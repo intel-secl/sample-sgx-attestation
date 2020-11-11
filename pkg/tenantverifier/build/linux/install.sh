@@ -31,6 +31,7 @@ for directory in $BIN_PATH $LOG_PATH $CONFIG_PATH; do
   chmod g+s $directory
 done
 
+cp sgx-quote-policy.txt $CONFIG_PATH
 chown -R $SERVICE_USERNAME:$SERVICE_USERNAME $CONFIG_PATH
 chmod -R 700 $CONFIG_PATH
 chmod -R g+s $CONFIG_PATH
@@ -67,7 +68,7 @@ if [ -z $env_file ]; then
 fi
 
 # check if SGXAPPVERIFIER_NOSETUP is defined
-if [ "${SGXAPP_NOSETUP}" == "true" ]; then
+if [ "${SGXAPPVERIFIER_NOSETUP}" == "true" ]; then
     echo "SGXAPPVERIFIER_NOSETUP is true, skipping setup"
     echo "Run \"$COMPONENT_NAME setup all\" for manual setup"
     echo "Installation completed successfully!"
