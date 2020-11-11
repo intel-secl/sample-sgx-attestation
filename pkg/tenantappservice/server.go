@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"syscall"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -103,7 +104,7 @@ func (a *App) startServer() error {
 
 	// Setup signal handlers to gracefully handle termination
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGKILL)
 	done := false
 
 	// method invoked upon seeing signal
