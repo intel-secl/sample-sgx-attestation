@@ -68,10 +68,14 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 		}
 	}
 
-	if err == nil {
-		defaultLog.Info("server:handleConnection Sending success response")
-	} else {
+	if err != nil {
 		defaultLog.Info("server:handleConnection Sending failure response")
+		resp = &domain.TenantAppResponse{
+			RequestType: constants.ReqTypeConnect,
+			RespCode:    constants.ResponseCodeFailure,
+		}
+	} else {
+		defaultLog.Info("server:handleConnection Sending success response")
 	}
 
 	// send base64 encoded response
@@ -85,6 +89,10 @@ func (a *App) startServer() error {
 	c := a.configuration()
 	if c == nil {
 		return errors.New("Failed to load configuration")
+	}
+	// initialize log
+	if err := a.configureLogs(c.Log.EnableStdout, true); err != nil {
+		return err
 	}
 
 	if !c.StandAloneMode {
