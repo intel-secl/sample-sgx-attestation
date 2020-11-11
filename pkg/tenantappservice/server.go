@@ -40,33 +40,40 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 	b64Req, err := bufio.NewReader(c).ReadBytes('\n')
 	if err != nil {
 		defaultLog.WithError(err).Errorf("server:handleConnection failed to read request body")
-		return
+		resp = &domain.TenantAppResponse{
+			RequestType: constants.ReqTypeConnect,
+			RespCode:    constants.ResponseCodeFailure,
+		}
+	} else {
+
+		// base64 decode the request
+		rawReq, err := base64.StdEncoding.DecodeString(string(b64Req))
+		if err != nil {
+			defaultLog.WithError(err).Errorf("server:handleConnection request base64 decode failed")
+		}
+
+		taRequest := lib.UnmarshalRequest(rawReq)
+
+		switch taRequest.RequestType {
+		case constants.ReqTypeConnect:
+			resp, err = sh.HandleConnect(taRequest)
+		case constants.ReqTypePubkeyWrappedSWK:
+			resp, err = sh.HandlePubkeyWrappedSWK(taRequest)
+		case constants.ReqTypeSWKWrappedSecret:
+			resp, err = sh.HandleSWKWrappedSecret(taRequest)
+		}
+
+		if err != nil {
+			defaultLog.WithError(err).Error("server:handleConnection Error processing request")
+		}
 	}
 
-	// base64 decode the request
-	rawReq, err := base64.StdEncoding.DecodeString(string(b64Req))
-	if err != nil {
-		defaultLog.WithError(err).Errorf("server:handleConnection request base64 decode failed")
-		return
+	if err == nil {
+		defaultLog.Info("server:handleConnection Sending success response")
+	} else {
+		defaultLog.Info("server:handleConnection Sending failure response")
 	}
 
-	taRequest := lib.UnmarshalRequest(rawReq)
-
-	switch taRequest.RequestType {
-	case constants.ReqTypeConnect:
-		resp, err = sh.HandleConnect(taRequest)
-	case constants.ReqTypePubkeyWrappedSWK:
-		resp, err = sh.HandlePubkeyWrappedSWK(taRequest)
-	case constants.ReqTypeSWKWrappedSecret:
-		resp, err = sh.HandleSWKWrappedSecret(taRequest)
-	}
-
-	if err != nil {
-		defaultLog.WithError(err).Error("server:handleConnection Error processing request")
-		return
-	}
-
-	defaultLog.Print("server:handleConnection Sending response")
 	// send base64 encoded response
 	c.Write([]byte(base64.StdEncoding.EncodeToString(lib.MarshalResponse(*resp)) + constants.EndLine))
 }
