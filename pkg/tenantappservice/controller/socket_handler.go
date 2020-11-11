@@ -10,10 +10,6 @@ package controller
 import "C"
 
 import (
-	"crypto"
-	"crypto/x509"
-	"encoding/pem"
-	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/config"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
@@ -25,7 +21,6 @@ import (
 var (
 	defaultLog        = log.GetDefaultLogger()
 	enclaveInitStatus C.int
-	ePubKey           crypto.PublicKey
 )
 
 func (sh *SocketHandler) EnclaveInit() error {
@@ -107,29 +102,8 @@ func (sh *SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Ten
 	qPtr = C.get_SGX_Quote(&qSize)
 	qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
 
-	// since we are not getting the enclave public key in the response,
-	// we must generate it
-	_, ePubKey, err = crypt.GenerateKeyPair(constants.DefaultKeyAlgorithm, constants.DefaultKeyLength)
-	if err != nil {
-		return nil, errors.Wrap(err, "controller/socket_handler:HandleConnect Failed to fetch enclave key")
-	}
-
-	// marshal before transmission
-	pubKeyBytes, err := x509.MarshalPKIXPublicKey(ePubKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "controller/socket_handler:HandleConnect Failed to marshal public key bytes")
-	}
-
-	// convert to PEM
-	pemBlock := pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubKeyBytes,
-	}
-
-	enclaveKeyBytes := pem.EncodeToMemory(&pemBlock)
-
 	defaultLog.Printf("Fetched quote is of length %d", len(qBytes))
-	if qBytes == nil || enclaveKeyBytes == nil {
+	if qBytes == nil {
 		resp.RespCode = constants.ResponseCodeFailure
 		err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant App Quote")
 	} else {
@@ -139,11 +113,6 @@ func (sh *SocketHandler) HandleConnect(req domain.TenantAppRequest) (*domain.Ten
 				Type:    constants.ResponseElementTypeSGXQuote,
 				Length:  uint16(len(qBytes)),
 				Payload: qBytes,
-			},
-			{
-				Type:    constants.ResponseElementTypeEnclavePubKey,
-				Length:  uint16(len(enclaveKeyBytes)),
-				Payload: enclaveKeyBytes,
 			},
 		}
 		resp.ParamLength = uint16(len(resp.Elements))

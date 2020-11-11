@@ -81,9 +81,6 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		var enclavePublicKey []byte
 		var sgxQuote []byte
 		for _, v := range connectResponse.Elements {
-			if v.Type == constants.ResponseElementTypeEnclavePubKey {
-				enclavePublicKey = v.Payload
-			}
 			if v.Type == constants.ResponseElementTypeSGXQuote {
 				sgxQuote = v.Payload
 			}
@@ -95,6 +92,13 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			return false
 		}
 		defaultLog.Printf("Verified SGX quote successfully")
+
+		// extract enclave pub key from quote
+		enclavePublicKey, err = parser.ParseSkcQuoteBlob(base64.StdEncoding.EncodeToString(sgxQuote)).GetRsaPubKey()
+		if err != nil {
+			defaultLog.WithError(err).Errorf("Failed to extract enclave public key from extended quote")
+			return false
+		}
 
 		defaultLog.Printf("Generating SWK")
 		swk, err := generateSWK()
