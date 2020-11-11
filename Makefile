@@ -28,6 +28,8 @@ tenantappservice-installer: tenantappservice
 	cp pkg/tenantappservice/out/sgx-tenantapp-service installer/
 	cp pkg/tenantappservice/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
 	cp pkg/tenantappservice/build/linux/sgx-tenantapp-service.service installer/sgx-tenantapp-service.service
+	cp tenantApp/app.so installer/app.so
+	cp tenantApp/enclave.signed.so installer/enclave.signed.so
 	makeself installer out/sgx-tenantapp-service-$(VERSION).bin "sgx-tenantapp-service $(VERSION)" ./install.sh
 	rm -rf installer
 
@@ -39,4 +41,5 @@ test:
 all: clean verifier-installer tenantappservice-installer test
 
 clean:
+	cd tenantApp && make clean
 	rm -rf out/ installer/ pkg/tenantappservice/out pkg/tenantverifier/out
