@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"

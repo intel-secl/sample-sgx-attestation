@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
 	"github.com/spf13/cast"
 	"intel/isecl/lib/common/v3/log"
@@ -29,7 +28,7 @@ func NewSgxSocketClient(address string) *TenantAppClient {
 
 func (client *TenantAppClient) SocketRequest(msg []byte) ([]byte, error) {
 	// connect to server
-	conn, err := net.Dial(constants.ProtocolTcp, client.address)
+	conn, err := net.Dial(ProtocolTcp, client.address)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +38,7 @@ func (client *TenantAppClient) SocketRequest(msg []byte) ([]byte, error) {
 	_msg := base64.StdEncoding.EncodeToString(msg)
 
 	// send to server
-	conn.Write([]byte(_msg + constants.EndLine))
+	conn.Write([]byte(_msg + EndLine))
 	defaultLog.Debugf("Write to socket: %s", _msg)
 
 	// read from server
@@ -168,13 +167,13 @@ func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 	connectResponse.RequestType = cast.ToUint8(msg[0])
 	// response code
 	connectResponse.RespCode = cast.ToUint8(msg[1])
-	if connectResponse.RespCode != constants.ResponseCodeSuccess && connectResponse.RespCode != constants.ResponseCodeFailure {
+	if connectResponse.RespCode != ResponseCodeSuccess && connectResponse.RespCode != ResponseCodeFailure {
 		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: invalid response type: %d", connectResponse.RespCode)
 	}
-	if connectResponse.RespCode == constants.ResponseCodeFailure {
+	if connectResponse.RespCode == ResponseCodeFailure {
 		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: Request failed")
 	}
-	if connectResponse.RequestType == constants.ReqTypeConnect {
+	if connectResponse.RequestType == ReqTypeConnect {
 		// length of request params
 		lengthOfParams := binary.BigEndian.Uint16(msg[2:4])
 
@@ -187,8 +186,8 @@ func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 			// read the RE type
 			responseElement.Type = msg[currentPosition]
 			// validate
-			if responseElement.Type != constants.ResponseElementTypeSGXQuote &&
-				responseElement.Type != constants.ResponseElementTypeEnclavePubKey {
+			if responseElement.Type != ResponseElementTypeSGXQuote &&
+				responseElement.Type != ResponseElementTypeEnclavePubKey {
 				return nil, fmt.Errorf("client/UnmarshalResponse: invalid response element type: %d", responseElement.Type)
 			}
 			currentPosition += 1 //ElementType
@@ -205,7 +204,7 @@ func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 
 		// set elements
 		connectResponse.Elements = reList
-	} else if connectResponse.RequestType != constants.ReqTypePubkeyWrappedSWK && connectResponse.RequestType != constants.ReqTypeSWKWrappedSecret {
+	} else if connectResponse.RequestType != ReqTypePubkeyWrappedSWK && connectResponse.RequestType != ReqTypeSWKWrappedSecret {
 		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: Invalid request-response type")
 	}
 

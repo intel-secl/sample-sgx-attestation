@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version"
 )
@@ -16,7 +17,7 @@ const helpStr = `Usage:
 Available Commands:
 	help|-h|--help         Show this help message
 	version|-v|--version   Show the version of current sgx-app-verifier build
-	start                  Start sgx-app-verifier
+	run                    Run sgx-app-verifier workflow
 	uninstall              Uninstall sgx-app-verifier
 `
 
@@ -30,5 +31,5 @@ func (a *App) printUsageWithError(err error) {
 }
 
 func (a *App) printVersion() {
-	fmt.Fprintf(a.consoleWriter(), "SGX App Verifier Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
+	fmt.Fprintf(a.consoleWriter(), "%s %s-%s\nBuilt %s\n", constants.ServiceName, version.Version, version.GitHash, version.BuildDate)
 }

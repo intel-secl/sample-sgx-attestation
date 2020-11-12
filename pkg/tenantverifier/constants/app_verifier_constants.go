@@ -70,11 +70,6 @@ const (
 	SecurityLogFile          = LogDir + ServiceUserName + "-security.log"
 )
 
-//Protocol
-const (
-	ProtocolTcp string = "tcp4"
-)
-
 //Protocol type
 const (
 	ReqTypeConnect          uint8 = 1
