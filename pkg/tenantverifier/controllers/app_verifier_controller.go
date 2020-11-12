@@ -134,7 +134,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			return false
 		}
 		if wrappedSWKResponse != nil && wrappedSWKResponse.RespCode == constants.ResponseCodeSuccess {
-			defaultLog.WithError(err).Errorf("Wrapped SWK sent to Tenant App successfully")
+			defaultLog.Info("Wrapped SWK sent to Tenant App successfully")
 		} else {
 			defaultLog.WithError(err).Errorf("Failed to send Wrapped SWK sent to Tenant App")
 			return false
@@ -174,7 +174,7 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			return false
 		}
 		if SWKWrappedSecretResponse != nil && SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess {
-			defaultLog.WithError(err).Errorf("Wrapped Secret by SWK sent to Tenant App successfully")
+			defaultLog.Info("Wrapped Secret by SWK sent to Tenant App successfully")
 			return SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess
 		} else {
 			defaultLog.WithError(err).Errorf("Failed to send Wrapped Secret by SWK sent to Tenant App")
@@ -318,7 +318,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	}
 
 	// split by newline
-	lines := strings.Split(string(qpRaw), "\n")
+	lines := strings.Split(string(qpRaw), constants.EndLine)
 	var mreValue, mrSignerValue, cpusvnValue string
 	for _, line := range lines {
 		// split by :

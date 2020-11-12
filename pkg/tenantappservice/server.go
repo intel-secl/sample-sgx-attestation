@@ -43,6 +43,7 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 		resp = &domain.TenantAppResponse{
 			RequestType: constants.ReqTypeConnect,
 			RespCode:    constants.ResponseCodeFailure,
+			ParamLength: 0,
 		}
 	} else {
 
@@ -73,6 +74,7 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 		resp = &domain.TenantAppResponse{
 			RequestType: constants.ReqTypeConnect,
 			RespCode:    constants.ResponseCodeFailure,
+			ParamLength: 0,
 		}
 	} else {
 		defaultLog.Info("server:handleConnection Sending success response")

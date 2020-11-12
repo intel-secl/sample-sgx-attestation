@@ -152,6 +152,18 @@ func UnmarshalRequest(req []byte) domain.TenantAppRequest {
 func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 	var connectResponse domain.TenantAppResponse
 
+	const minNumberOfBytes = 4
+	// check for malformed/empty response body - all responses should contain these fields:
+	// 1. Request Type  - 1 byte
+	// 2. Response Code - 1 byte
+	// 3. Number of Response Elements - 2 bytes
+	// Any response less than 4 bytes will be dropped
+	if len(msg) < minNumberOfBytes {
+		if len(msg) < minNumberOfBytes {
+			return nil, fmt.Errorf("client/UnmarshalResponse: malformed response body of insufficient length: %d", len(msg))
+		}
+	}
+
 	// read Request RequestType
 	connectResponse.RequestType = cast.ToUint8(msg[0])
 	// response code
