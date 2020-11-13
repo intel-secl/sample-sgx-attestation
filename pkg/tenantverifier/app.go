@@ -115,6 +115,7 @@ func (a *App) Run(args []string) error {
 			fmt.Println("Error running setup: ", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
 		}
+		fmt.Println("Setup completed successfully")
 	}
 	return nil
 }
