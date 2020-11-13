@@ -83,22 +83,11 @@ sgx_status_t enclave_pubkey(ref_rsa_params_t* g_rsa_key, int* count) {
             (unsigned char*)g_rsa_key->iqmp);
 
         if (ret_code != SGX_SUCCESS) {
-//pKey = (uint8_t*) g_rsa_key;
-*count = 4;
 		return ret_code;
         }
 
-///Fetch the public key
-//pKey = (uint8_t*) g_rsa_key.p;
-*count = 4;
 	return SGX_SUCCESS;
-
 }
-
-/*uint32_t get_hash(const uint8_t *p_src, uint32_t src_len, sgx_sha256_hash_t *p_hash) {
-	sgx_status_t status = sgx_sha256_msg(p_src, src_len, p_hash);
-		return status;
-}*/
 
 uint32_t enclave_create_report(const sgx_target_info_t* p_qe3_target, const sgx_report_data_t* reportData, sgx_report_t* p_report) {
 	    ////sgx_report_data_t report_data = { 0 };
