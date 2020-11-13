@@ -5,7 +5,7 @@
 package main
 
 import (
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/controllers"
 	"github.com/pkg/errors"
 	commLog "intel/isecl/lib/common/v3/log"
@@ -18,9 +18,9 @@ import (
 var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
 
-func (a *App) startServer() error {
-	defaultLog.Trace("app:startServer() Entering")
-	defer defaultLog.Trace("app:startServer() Leaving")
+func (a *App) startVerifier() error {
+	defaultLog.Trace("app:startVerifier() Entering")
+	defer defaultLog.Trace("app:startVerifier() Leaving")
 
 	c := a.configuration()
 	if c == nil {

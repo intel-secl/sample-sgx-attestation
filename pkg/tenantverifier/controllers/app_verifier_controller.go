@@ -16,9 +16,9 @@ import (
 	"fmt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
 	"github.com/intel-secl/intel-secl/v3/pkg/lib/common/log"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/lib"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tcpmsglib"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/pkg/errors"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"intel/isecl/sqvs/v3/resource/parser"
@@ -58,19 +58,18 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		constants.ParamTypeUsername: []byte(constants.TenantUsername), //username
 		constants.ParamTypePassword: []byte(constants.TenantPassword), //password
 	}
-	connectRequest := lib.MarshalRequest(constants.ReqTypeConnect, params)
-	tenantAppClient := lib.NewSgxSocketClient(ca.TenantAppSocketAddr)
+	connectRequest := tcpmsglib.MarshalRequest(constants.ReqTypeConnect, params)
 
 	// send the connect request to tenant app
 	defaultLog.Printf("Sending request to connect to Tenant App and for SGX quote")
-	connectResponseBytes, err := tenantAppClient.SocketRequest(connectRequest)
+	connectResponseBytes, err := tcpmsglib.SendMessageAndGetResponse(ca.TenantAppSocketAddr, connectRequest)
 	if err != nil {
 		defaultLog.WithError(err).Errorf("Error connecting to Tenant app")
 		return false
 	}
 
 	// parse connect request response from tenant app
-	connectResponse, err := lib.UnmarshalResponse(connectResponseBytes)
+	connectResponse, err := tcpmsglib.UnmarshalResponse(connectResponseBytes)
 	if err != nil {
 		defaultLog.WithError(err).Errorf("Error while unmarshalling response for connect from Tenant app")
 		return false
@@ -81,9 +80,6 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		var enclavePublicKey []byte
 		var sgxQuote []byte
 		for _, v := range connectResponse.Elements {
-			if v.Type == constants.ResponseElementTypeEnclavePubKey {
-				enclavePublicKey = v.Payload
-			}
 			if v.Type == constants.ResponseElementTypeSGXQuote {
 				sgxQuote = v.Payload
 			}
@@ -95,6 +91,13 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			return false
 		}
 		defaultLog.Printf("Verified SGX quote successfully")
+
+		// extract enclave pub key from quote
+		enclavePublicKey, err = parser.ParseSkcQuoteBlob(base64.StdEncoding.EncodeToString(sgxQuote)).GetRsaPubKey()
+		if err != nil {
+			defaultLog.WithError(err).Errorf("Failed to extract enclave public key from extended quote")
+			return false
+		}
 
 		defaultLog.Printf("Generating SWK")
 		swk, err := generateSWK()
@@ -116,21 +119,21 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 		params = map[uint8][]byte{
 			constants.ParamTypePubkeyWrappedSwk: pubkeyWrappedSWK,
 		}
-		wrappedSWKRequest := lib.MarshalRequest(constants.ReqTypePubkeyWrappedSWK, params)
+		wrappedSWKRequest := tcpmsglib.MarshalRequest(constants.ReqTypePubkeyWrappedSWK, params)
 
 		defaultLog.Debugf("Sending request to send Wrapped SWK to Tenant App")
-		wrappedSWKResponseBytes, err := tenantAppClient.SocketRequest(wrappedSWKRequest)
+		wrappedSWKResponseBytes, err := tcpmsglib.SendMessageAndGetResponse(ca.TenantAppSocketAddr, wrappedSWKRequest)
 		if err != nil {
 			defaultLog.WithError(err).Errorf("Error while getting response for wrapped SWK from Tenant app")
 			return false
 		}
-		wrappedSWKResponse, err := lib.UnmarshalResponse(wrappedSWKResponseBytes)
+		wrappedSWKResponse, err := tcpmsglib.UnmarshalResponse(wrappedSWKResponseBytes)
 		if err != nil {
 			defaultLog.WithError(err).Errorf("Error while unmarshalling response for wrapped SWK from Tenant app")
 			return false
 		}
 		if wrappedSWKResponse != nil && wrappedSWKResponse.RespCode == constants.ResponseCodeSuccess {
-			defaultLog.WithError(err).Errorf("Wrapped SWK sent to Tenant App successfully")
+			defaultLog.Info("Wrapped SWK sent to Tenant App successfully")
 		} else {
 			defaultLog.WithError(err).Errorf("Failed to send Wrapped SWK sent to Tenant App")
 			return false
@@ -157,20 +160,20 @@ func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
 			constants.ParamTypeSwkWrappedSecret: swkWrappedSecret, //SwkWrappedSecret
 		}
 		defaultLog.Printf("Sending request to send Wrapped Secret SWK to Tenant App")
-		SWKWrappedSecretRequest := lib.MarshalRequest(constants.ReqTypeSWKWrappedSecret, params)
+		SWKWrappedSecretRequest := tcpmsglib.MarshalRequest(constants.ReqTypeSWKWrappedSecret, params)
 
-		SWKWrappedSecretResponseBytes, err := tenantAppClient.SocketRequest(SWKWrappedSecretRequest)
+		SWKWrappedSecretResponseBytes, err := tcpmsglib.SendMessageAndGetResponse(ca.TenantAppSocketAddr, SWKWrappedSecretRequest)
 		if err != nil {
 			defaultLog.WithError(err).Errorf("Error while getting response for SWK wrapped secret from Tenant app")
 			return false
 		}
-		SWKWrappedSecretResponse, err := lib.UnmarshalResponse(SWKWrappedSecretResponseBytes)
+		SWKWrappedSecretResponse, err := tcpmsglib.UnmarshalResponse(SWKWrappedSecretResponseBytes)
 		if err != nil {
 			defaultLog.WithError(err).Errorf("Error while unmarshalling response for SWK wrapped secret from Tenant app")
 			return false
 		}
 		if SWKWrappedSecretResponse != nil && SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess {
-			defaultLog.WithError(err).Errorf("Wrapped Secret by SWK sent to Tenant App successfully")
+			defaultLog.Info("Wrapped Secret by SWK sent to Tenant App successfully")
 			return SWKWrappedSecretResponse.RespCode == constants.ResponseCodeSuccess
 		} else {
 			defaultLog.WithError(err).Errorf("Failed to send Wrapped Secret by SWK sent to Tenant App")
@@ -314,7 +317,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	}
 
 	// split by newline
-	lines := strings.Split(string(qpRaw), "\n")
+	lines := strings.Split(string(qpRaw), constants.EndLine)
 	var mreValue, mrSignerValue, cpusvnValue string
 	for _, line := range lines {
 		// split by :

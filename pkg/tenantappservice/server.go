@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"encoding/base64"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/lib"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tcpmsglib"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/controller"
 	"github.com/pkg/errors"
@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"syscall"
 )
 
 var defaultLog = commLog.GetDefaultLogger()
@@ -39,35 +40,48 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 	b64Req, err := bufio.NewReader(c).ReadBytes('\n')
 	if err != nil {
 		defaultLog.WithError(err).Errorf("server:handleConnection failed to read request body")
-		return
+		resp = &domain.TenantAppResponse{
+			RequestType: constants.ReqTypeConnect,
+			RespCode:    constants.ResponseCodeFailure,
+			ParamLength: 0,
+		}
+	} else {
+
+		// base64 decode the request
+		rawReq, err := base64.StdEncoding.DecodeString(string(b64Req))
+		if err != nil {
+			defaultLog.WithError(err).Errorf("server:handleConnection request base64 decode failed")
+		}
+
+		taRequest := tcpmsglib.UnmarshalRequest(rawReq)
+
+		switch taRequest.RequestType {
+		case constants.ReqTypeConnect:
+			resp, err = sh.HandleConnect(taRequest)
+		case constants.ReqTypePubkeyWrappedSWK:
+			resp, err = sh.HandlePubkeyWrappedSWK(taRequest)
+		case constants.ReqTypeSWKWrappedSecret:
+			resp, err = sh.HandleSWKWrappedSecret(taRequest)
+		}
+
+		if err != nil {
+			defaultLog.WithError(err).Error("server:handleConnection Error processing request")
+		}
 	}
 
-	// base64 decode the request
-	rawReq, err := base64.StdEncoding.DecodeString(string(b64Req))
 	if err != nil {
-		defaultLog.WithError(err).Errorf("server:handleConnection request base64 decode failed")
-		return
+		defaultLog.Info("server:handleConnection Sending failure response")
+		resp = &domain.TenantAppResponse{
+			RequestType: constants.ReqTypeConnect,
+			RespCode:    constants.ResponseCodeFailure,
+			ParamLength: 0,
+		}
+	} else {
+		defaultLog.Info("server:handleConnection Sending success response")
 	}
 
-	taRequest := lib.UnmarshalRequest(rawReq)
-
-	switch taRequest.RequestType {
-	case constants.ReqTypeConnect:
-		resp, err = sh.HandleConnect(taRequest)
-	case constants.ReqTypePubkeyWrappedSWK:
-		resp, err = sh.HandlePubkeyWrappedSWK(taRequest)
-	case constants.ReqTypeSWKWrappedSecret:
-		resp, err = sh.HandleSWKWrappedSecret(taRequest)
-	}
-
-	if err != nil {
-		defaultLog.WithError(err).Error("server:handleConnection Error processing request")
-		return
-	}
-
-	defaultLog.Print("server:handleConnection Sending response")
 	// send base64 encoded response
-	c.Write([]byte(base64.StdEncoding.EncodeToString(lib.MarshalResponse(*resp)) + constants.EndLine))
+	c.Write([]byte(base64.StdEncoding.EncodeToString(tcpmsglib.MarshalResponse(*resp)) + constants.EndLine))
 }
 
 func (a *App) startServer() error {
@@ -77,6 +91,10 @@ func (a *App) startServer() error {
 	c := a.configuration()
 	if c == nil {
 		return errors.New("Failed to load configuration")
+	}
+	// initialize log
+	if err := a.configureLogs(c.Log.EnableStdout, true); err != nil {
+		return err
 	}
 
 	if !c.StandAloneMode {
@@ -93,6 +111,7 @@ func (a *App) startServer() error {
 		defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
 		return err
 	}
+	defer l.Close()
 
 	sh := controller.SocketHandler{Config: a.Config}
 	err = sh.EnclaveInit()
@@ -103,8 +122,7 @@ func (a *App) startServer() error {
 
 	// Setup signal handlers to gracefully handle termination
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop)
-	done := false
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGKILL)
 
 	// method invoked upon seeing signal
 	go func() {
@@ -112,14 +130,13 @@ func (a *App) startServer() error {
 		defaultLog.Infof("app:startServer() Received signal %s", s)
 
 		// let's destroy enclave and exit
-		err = sh.EnclaveDestroy()
-		if err != nil {
-			defaultLog.WithError(err).Errorf("app:startServer() Enclave cleanup failed")
-		}
-		done = true
+		sh.EnclaveDestroy()
+
+		secLog.Info(commLogMsg.ServiceStop)
+		os.Exit(0)
 	}()
 
-	for !done {
+	for {
 		conn, err := l.Accept()
 		if err != nil {
 			defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))

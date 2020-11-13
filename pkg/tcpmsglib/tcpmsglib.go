@@ -2,14 +2,13 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package lib
+package tcpmsglib
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
 	"github.com/spf13/cast"
 	"intel/isecl/lib/common/v3/log"
@@ -19,27 +18,23 @@ import (
 
 var defaultLog = log.GetDefaultLogger()
 
-type TenantAppClient struct {
-	address string
-}
+// SendMessageAndGetResponse sends the base64-encoded message on the address provided
+// reads response and returns the base64-decoded response from TenantAppService
+func SendMessageAndGetResponse(address string, msg []byte) ([]byte, error) {
+	defaultLog.Trace("tcpmsglib:SendMessageAndGetResponse() Entering")
+	defer defaultLog.Trace("tcpmsglib:SendMessageAndGetResponse() Leaving")
 
-func NewSgxSocketClient(address string) *TenantAppClient {
-	return &TenantAppClient{address: address}
-}
-
-func (client *TenantAppClient) SocketRequest(msg []byte) ([]byte, error) {
 	// connect to server
-	conn, err := net.Dial(constants.ProtocolTcp, client.address)
+	conn, err := net.Dial(ProtocolTcp, address)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
 
 	// encode to base64 prior to transmission
 	_msg := base64.StdEncoding.EncodeToString(msg)
 
 	// send to server
-	conn.Write([]byte(_msg + constants.EndLine))
+	conn.Write([]byte(_msg + EndLine))
 	defaultLog.Debugf("Write to socket: %s", _msg)
 
 	// read from server
@@ -64,8 +59,11 @@ func (client *TenantAppClient) SocketRequest(msg []byte) ([]byte, error) {
 //parameter_type: uint8: one of username (1), password (2), pubkeywrappedswk (3), and swkrappedSecret (4)
 //parameter_length: uint16
 //Note: the format version has been omitted for simplicity.
-// MarshalRequest converts a TenantAppRequest into a byte-array prior to transmission
+// MarshalRequest converts a VerifierAppRequest into a byte-array prior to transmission
 func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
+	defaultLog.Trace("tcpmsglib:MarshalRequest() Entering")
+	defer defaultLog.Trace("tcpmsglib:MarshalRequest() Leaving")
+
 	var connectRequest []byte
 	connectRequest = append(connectRequest, requestType)
 	defaultLog.Debugf("MarshalRequest: requestType - %d", requestType)
@@ -84,6 +82,9 @@ func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 
 // MarshalResponse converts a TenantAppResponse into a byte-array prior to transmission
 func MarshalResponse(resp domain.TenantAppResponse) []byte {
+	defaultLog.Trace("tcpmsglib:MarshalResponse() Entering")
+	defer defaultLog.Trace("tcpmsglib:MarshalResponse() Leaving")
+
 	var respBytes []byte
 	respBytes = append(respBytes, resp.RequestType)
 	defaultLog.Debugf("MarshalResponse: requestType - %d", resp.RequestType)
@@ -103,9 +104,12 @@ func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	return respBytes
 }
 
-// UnmarshalRequest extracts TenantAppRequest from a byte-array
-func UnmarshalRequest(req []byte) domain.TenantAppRequest {
-	var tar domain.TenantAppRequest
+// UnmarshalRequest extracts VerifierAppRequest from a byte-array
+func UnmarshalRequest(req []byte) domain.VerifierAppRequest {
+	defaultLog.Trace("tcpmsglib:UnmarshalRequest() Entering")
+	defer defaultLog.Trace("tcpmsglib:UnmarshalRequest() Leaving")
+
+	var tar domain.VerifierAppRequest
 	// get Request Type
 	tar.RequestType = req[0]
 	defaultLog.Debugf("UnmarshalRequest: RequestType - %d", tar.RequestType)
@@ -119,7 +123,7 @@ func UnmarshalRequest(req []byte) domain.TenantAppRequest {
 	var curByte uint16 = 3
 	for i := 0; i < int(tar.ParamLength); i++ {
 		var te domain.TenantAppMessageElement
-		te.Type = req[i]
+		te.Type = req[curByte]
 		defaultLog.Debugf("UnmarshalRequest: Element %d | Type - %d", i, te.Type)
 		curByte += 1
 		te.Length = binary.BigEndian.Uint16(req[curByte : curByte+2])
@@ -150,19 +154,34 @@ func UnmarshalRequest(req []byte) domain.TenantAppRequest {
 //Note: the format version has been omitted for simplicity.
 // UnmarshalResponse extracts TenantAppResponse from a byte-array
 func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
+	defaultLog.Trace("tcpmsglib:UnmarshalResponse() Entering")
+	defer defaultLog.Trace("tcpmsglib:UnmarshalResponse() Leaving")
+
 	var connectResponse domain.TenantAppResponse
+
+	const minNumberOfBytes = 4
+	// check for malformed/empty response body - all responses should contain these fields:
+	// 1. Request Type  - 1 byte
+	// 2. Response Code - 1 byte
+	// 3. Number of Response Elements - 2 bytes
+	// Any response less than 4 bytes will be dropped
+	if len(msg) < minNumberOfBytes {
+		if len(msg) < minNumberOfBytes {
+			return nil, fmt.Errorf("tcpmsglib/UnmarshalResponse: malformed response body of insufficient length: %d", len(msg))
+		}
+	}
 
 	// read Request RequestType
 	connectResponse.RequestType = cast.ToUint8(msg[0])
 	// response code
 	connectResponse.RespCode = cast.ToUint8(msg[1])
-	if connectResponse.RespCode != constants.ResponseCodeSuccess && connectResponse.RespCode != constants.ResponseCodeFailure {
-		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: invalid response type: %d", connectResponse.RespCode)
+	if connectResponse.RespCode != ResponseCodeSuccess && connectResponse.RespCode != ResponseCodeFailure {
+		return &connectResponse, fmt.Errorf("tcpmsglib/UnmarshalResponse: invalid response type: %d", connectResponse.RespCode)
 	}
-	if connectResponse.RespCode == constants.ResponseCodeFailure {
-		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: Request failed")
+	if connectResponse.RespCode == ResponseCodeFailure {
+		return &connectResponse, fmt.Errorf("tcpmsglib/UnmarshalResponse: Request failed")
 	}
-	if connectResponse.RequestType == constants.ReqTypeConnect {
+	if connectResponse.RequestType == ReqTypeConnect {
 		// length of request params
 		lengthOfParams := binary.BigEndian.Uint16(msg[2:4])
 
@@ -175,9 +194,9 @@ func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 			// read the RE type
 			responseElement.Type = msg[currentPosition]
 			// validate
-			if responseElement.Type != constants.ResponseElementTypeSGXQuote &&
-				responseElement.Type != constants.ResponseElementTypeEnclavePubKey {
-				return nil, fmt.Errorf("client/UnmarshalResponse: invalid response element type: %d", responseElement.Type)
+			if responseElement.Type != ResponseElementTypeSGXQuote &&
+				responseElement.Type != ResponseElementTypeEnclavePubKey {
+				return nil, fmt.Errorf("tcpmsglib/UnmarshalResponse: invalid response element type: %d", responseElement.Type)
 			}
 			currentPosition += 1 //ElementType
 			// read the RE Length
@@ -193,15 +212,19 @@ func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 
 		// set elements
 		connectResponse.Elements = reList
-	} else if connectResponse.RequestType != constants.ReqTypePubkeyWrappedSWK && connectResponse.RequestType != constants.ReqTypeSWKWrappedSecret {
-		return &connectResponse, fmt.Errorf("client/UnmarshalResponse: Invalid request-response type")
+	} else if connectResponse.RequestType != ReqTypePubkeyWrappedSWK && connectResponse.RequestType != ReqTypeSWKWrappedSecret {
+		return &connectResponse, fmt.Errorf("tcpmsglib/UnmarshalResponse: Invalid request-response type")
 	}
 
 	defaultLog.Debugf("UnmarshalResponse: %v", connectResponse)
 	return &connectResponse, nil
 }
 
+// GetLengthInBytes returns the binary version of an integer
 func GetLengthInBytes(length int) []byte {
+	defaultLog.Trace("tcpmsglib:GetLengthInBytes() Entering")
+	defer defaultLog.Trace("tcpmsglib:GetLengthInBytes() Leaving")
+
 	lengthBytes := make([]byte, 2)
 	binary.BigEndian.PutUint16(lengthBytes, cast.ToUint16(length))
 	return lengthBytes

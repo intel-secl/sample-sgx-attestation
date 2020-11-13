@@ -6,9 +6,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tasks"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/constants"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -67,7 +67,7 @@ func (a *App) Run(args []string) error {
 		if len(args) != 2 {
 			return errInvalidCmd
 		}
-		return a.startServer()
+		return a.startVerifier()
 	case "uninstall":
 		// the only allowed flag is --purge
 		purge := false

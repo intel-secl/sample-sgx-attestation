@@ -33,13 +33,6 @@ const (
 	ConfigFile            = "config"
 )
 
-// tls constants
-const (
-	// default locations for tls certificate and key
-	DefaultKeyAlgorithm = "rsa"
-	DefaultKeyLength    = 3072
-)
-
 // general constants for stand alone mode
 const (
 	DefaultStandAloneMode = true
@@ -85,8 +78,7 @@ const (
 
 //Response Element
 const (
-	ResponseElementTypeSGXQuote      uint8 = 1
-	ResponseElementTypeEnclavePubKey uint8 = 2
+	ResponseElementTypeSGXQuote uint8 = 1
 )
 
 const (

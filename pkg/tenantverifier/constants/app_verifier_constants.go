@@ -8,14 +8,13 @@ import "time"
 
 // general SGX APP VERIFIER constants
 const (
-	ServiceName     = "SGX APP VERIFIER"
+	ServiceName     = "SGX Sample App Verifier"
 	ServiceDir      = "sgx-app-verifier/"
 	ServiceUserName = "sgx-app-verifier"
 	TenantUsername  = "tenantusername"
 	TenantPassword  = "tenantpassw0rd"
 
 	// service remove command
-	ServiceRemoveCmd           = "systemctl disable sgx-app-verifier"
 	VerifyQuote                = "/verifyQuote"
 	DefaultTenantAppListenHost = "127.0.0.1"
 )
@@ -40,14 +39,13 @@ const (
 // tls constants
 const (
 	// default locations for tls certificate and key
-	DefaultTLSKeyFile                  = ConfigDir + "tls.key"
-	DefaultTLSCertFile                 = ConfigDir + "tls-cert.pem"
-	DefaultAppTlsCn                    = "SGX APP VERIFIER TLS Certificate"
-	DefaultAppTlsSan                   = "127.0.0.1,localhost"
-	DefaultKeyAlgorithm                = "rsa"
-	DefaultKeyLength                   = 3072
-	DefaultSecretLength                = 256
-	DefaultSelfSignedCertValidityYears = 1
+	DefaultTLSKeyFile   = ConfigDir + "tls.key"
+	DefaultTLSCertFile  = ConfigDir + "tls-cert.pem"
+	DefaultAppTlsCn     = "SGX APP VERIFIER TLS Certificate"
+	DefaultAppTlsSan    = "127.0.0.1,localhost"
+	DefaultKeyAlgorithm = "rsa"
+	DefaultKeyLength    = 3072
+	DefaultSecretLength = 256
 )
 
 // general constants for stand alone mode
@@ -70,16 +68,6 @@ const (
 	DefaultLogEntryMaxlength = 1500
 	LogFile                  = LogDir + ServiceUserName + ".log"
 	SecurityLogFile          = LogDir + ServiceUserName + "-security.log"
-)
-
-// jwt constants
-const (
-	JWTCertsCacheTime = "1m"
-)
-
-//Protocol
-const (
-	ProtocolTcp string = "tcp4"
 )
 
 //Protocol type

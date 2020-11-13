@@ -17,7 +17,7 @@ type TenantAppResponse struct {
 	Elements    []TenantAppMessageElement
 }
 
-type TenantAppRequest struct {
+type VerifierAppRequest struct {
 	RequestType uint8
 	ParamLength uint16
 	Elements    []TenantAppMessageElement

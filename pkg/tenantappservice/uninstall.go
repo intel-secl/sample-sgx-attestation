@@ -60,11 +60,11 @@ func (a *App) runDirPath() string {
 }
 
 func (a *App) uninstall(purge bool) error {
-	fmt.Println("Uninstalling Service Service")
+	fmt.Println("Uninstalling " + constants.ServiceName)
 	// remove service
 	_, _, err := exec.RunCommandWithTimeout(constants.ServiceRemoveCmd, 5)
 	if err != nil {
-		fmt.Println("Could not disable Service Service")
+		fmt.Println("Could not disable " + constants.ServiceName)
 		fmt.Println("Error : ", err)
 	}
 

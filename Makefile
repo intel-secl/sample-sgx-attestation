@@ -4,7 +4,10 @@ GITCOMMITDATE := $(shell git log -1 --date=short --pretty=format:%cd)
 VERSION := $(or ${GITTAG}, v3.2.0)
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 
-.PHONY: clean verifier tenantappservice test
+.PHONY: clean tenantapp tenantappservice verifier test
+
+tenantapp:
+	cd tenantApp/ && $(MAKE) all
 
 verifier:
 	cd pkg/tenantverifier && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
@@ -17,7 +20,7 @@ verifier-installer: verifier
 	makeself installer out/sgx-app-verifier-$(VERSION).bin "sgx-app-verifier $(VERSION)" ./install.sh
 	rm -rf installer
 
-tenantappservice:
+tenantappservice: tenantapp
 	cd pkg/tenantappservice && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.GitHash=$(GITCOMMIT)" -o out/sgx-tenantapp-service
 
 tenantappservice-installer: tenantappservice
@@ -25,6 +28,8 @@ tenantappservice-installer: tenantappservice
 	cp pkg/tenantappservice/out/sgx-tenantapp-service installer/
 	cp pkg/tenantappservice/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
 	cp pkg/tenantappservice/build/linux/sgx-tenantapp-service.service installer/sgx-tenantapp-service.service
+	cp tenantApp/app.so installer/app.so
+	cp tenantApp/enclave.signed.so installer/enclave.signed.so
 	makeself installer out/sgx-tenantapp-service-$(VERSION).bin "sgx-tenantapp-service $(VERSION)" ./install.sh
 	rm -rf installer
 
@@ -36,4 +41,5 @@ test:
 all: clean verifier-installer tenantappservice-installer test
 
 clean:
-	rm -rf out/ installer/
+	cd tenantApp && make clean
+	rm -rf out/ installer/ pkg/tenantappservice/out pkg/tenantverifier/out
