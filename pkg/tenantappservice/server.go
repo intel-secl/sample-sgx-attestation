@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"encoding/base64"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/lib"
+	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tcpmsglib"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/controller"
 	"github.com/pkg/errors"
@@ -53,7 +53,7 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 			defaultLog.WithError(err).Errorf("server:handleConnection request base64 decode failed")
 		}
 
-		taRequest := lib.UnmarshalRequest(rawReq)
+		taRequest := tcpmsglib.UnmarshalRequest(rawReq)
 
 		switch taRequest.RequestType {
 		case constants.ReqTypeConnect:
@@ -81,7 +81,7 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 	}
 
 	// send base64 encoded response
-	c.Write([]byte(base64.StdEncoding.EncodeToString(lib.MarshalResponse(*resp)) + constants.EndLine))
+	c.Write([]byte(base64.StdEncoding.EncodeToString(tcpmsglib.MarshalResponse(*resp)) + constants.EndLine))
 }
 
 func (a *App) startServer() error {

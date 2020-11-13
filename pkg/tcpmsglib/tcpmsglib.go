@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
-package lib
+package tcpmsglib
 
 import (
 	"bytes"
@@ -18,21 +18,14 @@ import (
 
 var defaultLog = log.GetDefaultLogger()
 
-type TenantAppClient struct {
-	address string
-}
-
-func NewSgxSocketClient(address string) *TenantAppClient {
-	return &TenantAppClient{address: address}
-}
-
-func (client *TenantAppClient) SocketRequest(msg []byte) ([]byte, error) {
+// SendMessageAndGetResponse sends the base64-encoded message on the address provided
+// reads response and returns the base64-decoded response from TenantAppService
+func SendMessageAndGetResponse(address string, msg []byte) ([]byte, error) {
 	// connect to server
-	conn, err := net.Dial(ProtocolTcp, client.address)
+	conn, err := net.Dial(ProtocolTcp, address)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
 
 	// encode to base64 prior to transmission
 	_msg := base64.StdEncoding.EncodeToString(msg)
@@ -212,6 +205,7 @@ func UnmarshalResponse(msg []byte) (*domain.TenantAppResponse, error) {
 	return &connectResponse, nil
 }
 
+// GetLengthInBytes returns the binary version of an integer
 func GetLengthInBytes(length int) []byte {
 	lengthBytes := make([]byte, 2)
 	binary.BigEndian.PutUint16(lengthBytes, cast.ToUint16(length))
