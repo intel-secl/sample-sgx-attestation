@@ -48,8 +48,8 @@ func defaultConfig() *config.Configuration {
 		CmsTlsCertDigest:  viper.GetString("cms-tls-cert-sha384"),
 		SqvsUrl:           viper.GetString("sqvs-url"),
 		Service: config.ServiceConfig{
-			Username: viper.GetString("service-username"),
-			Password: viper.GetString("service-password"),
+			Username: viper.GetString("verifier-username"),
+			Password: viper.GetString("verifier-password"),
 		},
 		Server: config.ServerConfig{
 			ReadTimeout:       viper.GetDuration("server-read-timeout"),

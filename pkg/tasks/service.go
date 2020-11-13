@@ -37,8 +37,8 @@ type Service struct {
 const svcEnvHelpPrompt = "Following environment variables are required for Service setup:"
 
 var svcEnvHelp = map[string]string{
-	"SERVICE_USERNAME":         "The service username for SGX APP VERIFIER configured in AAS for non stand alone mode",
-	"SERVICE_PASSWORD":         "The service password for SGX APP VERIFIER configured in AAS for non stand alone mode",
+	"VERIFIER_USERNAME":        "The username for SGX APP VERIFIER configured in AAS for non stand alone mode",
+	"VERIFIER_PASSWORD":        "The password for SGX APP VERIFIER configured in AAS for non stand alone mode",
 	"AAS_BASE_URL":             "The url to AAS",
 	"CMS_BASE_URL":             "The url to CMS",
 	"CMS_TLS_CERT_SHA384":      "The certificate sha384 digest of CMS",

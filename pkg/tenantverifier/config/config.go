@@ -52,8 +52,8 @@ type TLSCertConfig struct {
 
 // For use when the verification service exposes an web endpoint
 type ServiceConfig struct {
-	Username string `yaml:"service-username" mapstructure:"service-username"`
-	Password string `yaml:"service-password" mapstructure:"service-password"`
+	Username string `yaml:"verifier-username" mapstructure:"verifier-username"`
+	Password string `yaml:"verifier-password" mapstructure:"verifier-password"`
 }
 
 // this function sets the configure file name and type
