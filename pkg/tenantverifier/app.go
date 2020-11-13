@@ -67,7 +67,7 @@ func (a *App) Run(args []string) error {
 		if len(args) != 2 {
 			return errInvalidCmd
 		}
-		return a.startServer()
+		return a.startVerifier()
 	case "uninstall":
 		// the only allowed flag is --purge
 		purge := false
