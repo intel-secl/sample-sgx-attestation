@@ -56,7 +56,7 @@ func SendMessageAndGetResponse(address string, msg []byte) ([]byte, error) {
 //parameter_type: uint8: one of username (1), password (2), pubkeywrappedswk (3), and swkrappedSecret (4)
 //parameter_length: uint16
 //Note: the format version has been omitted for simplicity.
-// MarshalRequest converts a TenantAppRequest into a byte-array prior to transmission
+// MarshalRequest converts a VerifierAppRequest into a byte-array prior to transmission
 func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	var connectRequest []byte
 	connectRequest = append(connectRequest, requestType)
@@ -95,9 +95,9 @@ func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	return respBytes
 }
 
-// UnmarshalRequest extracts TenantAppRequest from a byte-array
-func UnmarshalRequest(req []byte) domain.TenantAppRequest {
-	var tar domain.TenantAppRequest
+// UnmarshalRequest extracts VerifierAppRequest from a byte-array
+func UnmarshalRequest(req []byte) domain.VerifierAppRequest {
+	var tar domain.VerifierAppRequest
 	// get Request Type
 	tar.RequestType = req[0]
 	defaultLog.Debugf("UnmarshalRequest: RequestType - %d", tar.RequestType)
