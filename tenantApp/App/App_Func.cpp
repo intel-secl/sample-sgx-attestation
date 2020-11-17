@@ -442,8 +442,7 @@ uint8_t* get_SGX_Quote(int* x) {
 													pckCert = certificate_str.substr(pckPos1, pckPos2);
 									}
 					} else {
-									printf("pck certficate could not be fetched");
-									printf("pck certificate couldn't be fetched");
+									printf("pck certificate could not be fetched");
 					}
 					const std::size_t pckCertSize = pckPos2;
 
