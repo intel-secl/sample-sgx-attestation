@@ -103,7 +103,7 @@ func (sh *SocketHandler) HandleConnect(req domain.VerifierAppRequest) (*domain.T
 		qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
 
 		defaultLog.Printf("Fetched quote is of length %d", len(qBytes))
-		if qBytes == nil {
+		if qBytes == nil || qSize == C.int(0) {
 			resp.RespCode = constants.ResponseCodeFailure
 			err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant App Quote")
 		} else {
@@ -142,7 +142,7 @@ func (sh *SocketHandler) HandlePubkeyWrappedSWK(req domain.VerifierAppRequest) (
 	}
 
 	defaultLog.Printf("Length of the wrapped SWK is %d", len(pubKeyWrappedSwk))
-	// ideally we should be passing the wrapped key here
+	// ideally we should be passing the wrapped SWK here
 	C.unwrap_SWK()
 	result := true
 
