@@ -5,10 +5,10 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 - Initializing and destroying an enclave
 - Generate Quote Inside enclave
 - Unwrapping secret inside enclave
-- Creating Public Key inside enclave
-- Verify the quote generated. Extract Public key from enclave
-- Send a key wrapped in public key to enclave to unwrap
-- Send secret wrapped in wrapped ket to be unwrapped in enclave
+- Creating a public private key pair inside the enclave and including in the SGX quote a hash of the public key concatenated with a verifier-provided nonce
+- Verify the SGX quote and the enclave public keys and the nonce match the hash in the quote
+- Generating and sending a Symmetric Wrapping Key (SWK) wrapped with the enclave public key
+- Sending a SWK-wrapped secret to the enclave
 
 --------------------------------------------------------------------------------
 
