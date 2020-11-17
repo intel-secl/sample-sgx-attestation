@@ -14,18 +14,15 @@ const helpStr = `Usage:
 	sgx-tenantapp-service <command> [arguments]
 	
 Available Commands:
-	help|-h|--help              Print this usage information
-	version|-v|--version        Print version information
-	setup -f setup envfile		Run setup task
+	help|-h|--help              Show this help message
+    version|-v|--version        Print version information
+	setup [-f <answer-file>]    Initializes the app configuration. If answer file is not provided, defaults are loaded.
 	start                  		Start sgx-tenantapp-service
 	status                 		Show the status of sgx-tenantapp-service
 	stop                   		Stop sgx-tenantapp-service
-	uninstall [--purge]    		Uninstall sgx-tenantapp-service	
+	uninstall [--purge]    		Uninstall sgx-tenantapp-service. Config is removed if --purge flag is supplied.
 
-Usage of sgx-tenantapp-service setup:
-	sgx-tenantapp-service setup [--help] [--force] [-f <answer-file>]
-		--help                      show help message for setup task
-		--force                     existing configuration will be overwritten if this flag is set`
+`
 
 func (a *App) printUsage() {
 	fmt.Fprintln(a.consoleWriter(), helpStr)

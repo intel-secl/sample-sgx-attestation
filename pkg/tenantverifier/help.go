@@ -15,10 +15,12 @@ const helpStr = `Usage:
 	sgx-app-verifier <command> [arguments]
 	
 Available Commands:
-	help|-h|--help         Show this help message
-	version|-v|--version   Show the version of current sgx-app-verifier build
-	run                    Run sgx-app-verifier workflow
-	uninstall              Uninstall sgx-app-verifier
+	help|-h|--help              Show this help message
+	version|-v|--version        Show the version of current sgx-app-verifier build
+    setup [-f <answer-file>]    Initializes the app configuration. If answer file is not provided, defaults are loaded.
+	run                         Run sgx-app-verifier workflow
+    uninstall [--purge]    		Uninstall sgx-tenantapp-service. Config is removed if --purge flag is supplied.
+
 `
 
 func (a *App) printUsage() {
