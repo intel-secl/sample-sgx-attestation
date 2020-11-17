@@ -299,7 +299,7 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 		err = ca.ExtVerifier.VerifyQuote(qData)
 	} else {
 		// call is handled by stub
-		defaultLog.Printf("Calling out to SQVS - StandaloneVerifier")
+		defaultLog.Printf("Calling out to StandaloneVerifier")
 		err = ca.SaVerifier.VerifyQuote(qData)
 	}
 
