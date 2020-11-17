@@ -68,7 +68,7 @@ func MarshalRequest(requestType uint8, params map[uint8][]byte) []byte {
 	connectRequest = append(connectRequest, requestType)
 	defaultLog.Debugf("MarshalRequest: requestType - %d", requestType)
 	connectRequest = append(connectRequest, GetLengthInBytes(len(params))...)
-	defaultLog.Debugf("MarshalRequest: Number of payloads - %d", len(params))
+	defaultLog.Debugf("MarshalRequest: Number of parameters - %d", len(params))
 	for paramType, paramValue := range params {
 		connectRequest = append(connectRequest, paramType)
 		defaultLog.Debugf("MarshalRequest: paramType - %d", len(params))
@@ -91,7 +91,7 @@ func MarshalResponse(resp domain.TenantAppResponse) []byte {
 	respBytes = append(respBytes, resp.RespCode)
 	defaultLog.Debugf("MarshalResponse: Response Code - %d", resp.RespCode)
 	respBytes = append(respBytes, GetLengthInBytes(int(resp.ParamLength))...)
-	defaultLog.Debugf("MarshalResponse: Number of payloads - %d", resp.ParamLength)
+	defaultLog.Debugf("MarshalResponse: Number of parameters - %d", resp.ParamLength)
 	for _, paramValue := range resp.Elements {
 		respBytes = append(respBytes, paramValue.Type)
 		defaultLog.Debugf("MarshalResponse: paramType - %d", paramValue.Type)
