@@ -25,7 +25,11 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 - make
 - makeself
 
-- Install Intel(R) SGX SDK for Linux* OS TODO: add link
+- Install Intel(R) SGX SDK for Linux* OS.
+- Make sure your environment is set:
+    $ source ${sgx-sdk-install-path}/environment
+
+-You can also refer to quick start guide for 3.2 release.
 
 - Running `make all` build the complete project:
 
@@ -33,6 +37,7 @@ Two installer binaries are created in `out` folder:
 
 - sgx-app-verifier-v*.bin - binary for the verifier app
 - sgx-tenantapp-service-v*.bin - binary for the tenant app service
+
 
 --------------------------------------------------------------------------------
 
@@ -80,6 +85,12 @@ LOG_ENABLE_STDOUT  | boolean | Logs entries will be printed on stdout           
 
 --------------------------------------------------------------------------------
 
+### Pre-requisites:
+- Install Intel(R) SGX SDK for Linux* OS
+- Make sure your environment is set:
+    $ source ${sgx-sdk-install-path}/environment
+-You can also refer to quick start guide for 3.2 release.
+
 ### SGX Verifier App
 
 1. Place the updated **sgx-tenantapp-service.env** in /root
@@ -90,7 +101,6 @@ LOG_ENABLE_STDOUT  | boolean | Logs entries will be printed on stdout           
   ```
 
 ### SGX Tenant App Service
-
 1. Place the updated **sgx-app-verifier.env** in /root
 2. Run the installer binary:
 
