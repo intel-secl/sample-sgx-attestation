@@ -23,6 +23,7 @@ import (
 
 var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
+var isServiceRunning = true
 
 func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 	defaultLog.Trace("app:handleConnection() Entering")
@@ -130,13 +131,16 @@ func (a *App) startServer() error {
 		defaultLog.Infof("app:startServer() Received signal %s", s)
 
 		// let's destroy enclave and exit
-		sh.EnclaveDestroy()
+		err = sh.EnclaveDestroy()
 
-		secLog.Info(commLogMsg.ServiceStop)
-		os.Exit(0)
+		if err != nil {
+			defaultLog.WithError(err).Info("app:startServer() Error destroying enclave")
+		}
+
+		isServiceRunning = false
 	}()
 
-	for {
+	for isServiceRunning {
 		conn, err := l.Accept()
 		if err != nil {
 			defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
