@@ -25,20 +25,20 @@ var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
 var isServiceRunning = true
 
-func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
+func (a *App) handleConnection(connection net.Conn, sh *controller.SocketHandler) {
 	defaultLog.Trace("app:handleConnection() Entering")
 	defer defaultLog.Trace("app:handleConnection() Leaving")
 
 	var resp *domain.TenantAppResponse
 
-	defer c.Close()
+	defer connection.Close()
 
 	if sh == nil {
 		defaultLog.Fatalf("server:handleConnection SocketHandler not initialized")
 	}
 
-	defaultLog.Printf("Serving %s\n", c.RemoteAddr().String())
-	b64Req, err := bufio.NewReader(c).ReadBytes('\n')
+	defaultLog.Printf("Serving %s\n", connection.RemoteAddr().String())
+	b64Req, err := bufio.NewReader(connection).ReadBytes('\n')
 	if err != nil {
 		defaultLog.WithError(err).Errorf("server:handleConnection failed to read request body")
 		resp = &domain.TenantAppResponse{
@@ -82,7 +82,7 @@ func (a *App) handleConnection(c net.Conn, sh *controller.SocketHandler) {
 	}
 
 	// send base64 encoded response
-	c.Write([]byte(base64.StdEncoding.EncodeToString(tcpmsglib.MarshalResponse(*resp)) + constants.EndLine))
+	connection.Write([]byte(base64.StdEncoding.EncodeToString(tcpmsglib.MarshalResponse(*resp)) + constants.EndLine))
 }
 
 func (a *App) startServer() error {
@@ -107,12 +107,12 @@ func (a *App) startServer() error {
 	// check if socket can be opened up
 	listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
 	defaultLog.Infof("app:startServer Binding to %s", listenAddr)
-	l, err := net.Listen(constants.ProtocolTcp, listenAddr)
+	listener, err := net.Listen(constants.ProtocolTcp, listenAddr)
 	if err != nil {
 		defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
 		return err
 	}
-	defer l.Close()
+	defer listener.Close()
 
 	sh := controller.SocketHandler{Config: a.Config}
 	err = sh.EnclaveInit()
@@ -141,7 +141,7 @@ func (a *App) startServer() error {
 	}()
 
 	for isServiceRunning {
-		conn, err := l.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
 			defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
 			break
@@ -151,10 +151,6 @@ func (a *App) startServer() error {
 	}
 
 	secLog.Info(commLogMsg.ServiceStop)
-	if err := l.Close(); err != nil {
-		defaultLog.WithError(err).Info("Failed to gracefully shutdown TCP socket")
-		return err
-	}
 
 	return nil
 }
