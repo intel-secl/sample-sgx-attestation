@@ -23,7 +23,6 @@ import (
 
 var defaultLog = commLog.GetDefaultLogger()
 var secLog = commLog.GetSecurityLogger()
-var isServiceRunning = true
 
 func (a *App) handleConnection(connection net.Conn, sh *controller.SocketHandler) {
 	defaultLog.Trace("app:handleConnection() Entering")
@@ -123,31 +122,34 @@ func (a *App) startServer() error {
 
 	// Setup signal handlers to gracefully handle termination
 	stop := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGKILL)
 
-	// method invoked upon seeing signal
 	go func() {
-		s := <-stop
-		defaultLog.Infof("app:startServer() Received signal %s", s)
+		for {
+			conn, err := listener.Accept()
 
-		// let's destroy enclave and exit
-		err = sh.EnclaveDestroy()
-
-		if err != nil {
-			defaultLog.WithError(err).Info("app:startServer() Error destroying enclave")
+			if err != nil {
+				defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
+				break
+			}
+			go a.handleConnection(conn, &sh)
 		}
-
-		isServiceRunning = false
+		done <- true
 	}()
 
-	for isServiceRunning {
-		conn, err := listener.Accept()
-		if err != nil {
-			defaultLog.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
-			break
-		}
+	go func() {
+		sig := <-stop
+		defaultLog.Infof("app:startServer() Received signal %s", sig)
+		done <- true
+	}()
 
-		go a.handleConnection(conn, &sh)
+	<-done
+	// let's destroy enclave and exit
+	err = sh.EnclaveDestroy()
+
+	if err != nil {
+		defaultLog.WithError(err).Info("app:startServer() Error destroying enclave")
 	}
 
 	secLog.Info(commLogMsg.ServiceStop)
