@@ -94,8 +94,10 @@ func (sh *SocketHandler) HandleConnect(req domain.VerifierAppRequest) (*domain.T
 		secLog.Infof("controller/socket_handler:HandleConnect " + commLogMsg.AuthenticationSuccess)
 		defaultLog.Print("Getting quote from the Tenant App Enclave")
 
-		var qSize C.int
 		var qBytes []byte
+		// qSize holds the length of the quote byte array returned from enclave
+		var qSize C.int
+		// qPtr holds the bytes array of the quote returned from enclave
 		var qPtr *C.u_int8_t
 		qPtr = C.get_SGX_Quote(&qSize)
 		qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
