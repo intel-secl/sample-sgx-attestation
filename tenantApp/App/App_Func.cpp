@@ -238,6 +238,9 @@ int destroy_Enclave() {
 	//}
     
     printf("Info: SampleEnclave successfully returned.\n");
+
+    // return 0 on successful destroy
+    return 0;
 }
 
 /* OCall functions */
