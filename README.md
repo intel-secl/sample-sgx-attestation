@@ -18,7 +18,7 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 
 ### Pre-requisites
 
-- RHEL 8.x
+- RHEL 8.0
 - GoLang v1.13 or greater
 - Intel(R) SGX SDK for Linux
 - gcc toolchain
@@ -26,11 +26,12 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 - makeself
 
 - Install Intel(R) SGX SDK for Linux* OS.
-- Make sure your environment is set:
-    $ source ${sgx-sdk-install-path}/environment
+
+- Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
 
 - You can also refer to quick start guide for 3.2 release.
--   https://github.com/intel-secl/docs/blob/v3.2/develop/quick-start-guides/Quick%20Start%20Guide%20-%20Intel%C2%AE%20Security%20Libraries%20-%20Secure%20Key%20Caching.md
+
+- <https://github.com/intel-secl/docs/blob/v3.2/develop/quick-start-guides/Quick%20Start%20Guide%20-%20Intel%C2%AE%20Security%20Libraries%20-%20Secure%20Key%20Caching.md>
 
 - Running `make all` build the complete project:
 
@@ -39,10 +40,9 @@ Two installer binaries are created in `out` folder:
 - sgx-app-verifier-v*.bin - binary for the verifier app
 - sgx-tenantapp-service-v*.bin - binary for the tenant app service
 
-
 --------------------------------------------------------------------------------
 
-## 3\. Configuration Parameters For Enclave
+## 2\. Configuration Parameters For Enclave
 
 --------------------------------------------------------------------------------
 
@@ -86,12 +86,11 @@ LOG_ENABLE_STDOUT  | boolean | Logs entries will be printed on stdout           
 
 --------------------------------------------------------------------------------
 
-### Pre-requisites:
+### Pre-requisites
+
 - Install Intel(R) SGX SDK for Linux* OS
-- Make sure your environment is set:
-    $ source ${sgx-sdk-install-path}/environment
-- You can also refer to quick start guide for 3.2 release.
-    https://github.com/intel-secl/docs/blob/v3.2/develop/quick-start-guides/Quick%20Start%20Guide%20-%20Intel%C2%AE%20Security%20Libraries%20-%20Secure%20Key%20Caching.md
+- Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
+- You can also refer to quick start guide for 3.2 release. <https://github.com/intel-secl/docs/blob/v3.2/develop/quick-start-guides/Quick%20Start%20Guide%20-%20Intel%C2%AE%20Security%20Libraries%20-%20Secure%20Key%20Caching.md>
 
 ### SGX Verifier App
 
@@ -103,6 +102,7 @@ LOG_ENABLE_STDOUT  | boolean | Logs entries will be printed on stdout           
   ```
 
 ### SGX Tenant App Service
+
 1. Place the updated **sgx-app-verifier.env** in /root
 2. Run the installer binary:
 
@@ -119,24 +119,37 @@ LOG_ENABLE_STDOUT  | boolean | Logs entries will be printed on stdout           
 ```bash
 # Ensure the tenant app service is running
 sgx-tenantapp-service start
+```
 
+1. This does the following:
+2. Starts the Tenant App Service
+3. Initializes the enclave inside the Tenant App
+4. Starts the TCP listener on the configured port
+
+```bash
 # Get usage information
 sgx-tenant-service --help
+```
 
+```bash
 # Get usage information
 sgx-app-verifier --help
+```
 
-# Kick off the quote verification workflow 
+```bash
+# Kick off the quote verification workflow
 sgx-app-verifier run
 ```
 
-These are the components involved here:
+These are the components involved:
 
 Component             | Short Name         | Implmented In | Requires SGX for deploy | Requires SGX for build
 --------------------- | ------------------ | ------------- | ----------------------- | ----------------------
 sgx-app-verifier      | verifier           | Go            | No                      | No
 sgx-tenantapp-service | Tenant App Service | Go            | Yes                     | Yes
 SGX tenant app        | SGX workload app   | C             | Yes                     | Yes                    |
+
+### Standalone Quote Verification Workflow:
 
 1. The verifier will transmit a CONNECT message to the tenant app service over a TCP socket.
 2. The tenant app service, parses the CONNECT request and fetches the quote from the SGX workload running inside the SGX enclave. "The extended quote" is sent back in the response - containing the quote and the enclave's public key.
