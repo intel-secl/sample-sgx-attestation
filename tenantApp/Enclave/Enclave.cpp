@@ -67,20 +67,17 @@ int printf(const char* fmt, ...)
 
 sgx_status_t enclave_pubkey(ref_rsa_params_t* g_rsa_key, int* count) {
 
-	//size1=256;
-	//size2=3;
-
 	g_rsa_key->e[0] = 0x10001;
-	        sgx_status_t ret_code = sgx_create_rsa_key_pair(384,
-            4,
-            (unsigned char*)g_rsa_key->n,
-            (unsigned char*)g_rsa_key->d,
-            (unsigned char*)g_rsa_key->e,
-            (unsigned char*)g_rsa_key->p,
-            (unsigned char*)g_rsa_key->q,
-            (unsigned char*)g_rsa_key->dmp1,
-            (unsigned char*)g_rsa_key->dmq1,
-            (unsigned char*)g_rsa_key->iqmp);
+	sgx_status_t ret_code = sgx_create_rsa_key_pair(REF_N_SIZE_IN_BYTES,
+            REF_E_SIZE_IN_BYTES,
+	    (unsigned char*)g_rsa_key->n,
+	    (unsigned char*)g_rsa_key->d,
+	    (unsigned char*)g_rsa_key->e,
+	    (unsigned char*)g_rsa_key->p,
+	    (unsigned char*)g_rsa_key->q,
+	    (unsigned char*)g_rsa_key->dmp1,
+	    (unsigned char*)g_rsa_key->dmq1,
+	    (unsigned char*)g_rsa_key->iqmp);
 
         if (ret_code != SGX_SUCCESS) {
 		return ret_code;
@@ -90,7 +87,6 @@ sgx_status_t enclave_pubkey(ref_rsa_params_t* g_rsa_key, int* count) {
 }
 
 uint32_t enclave_create_report(const sgx_target_info_t* p_qe3_target, const sgx_report_data_t* reportData, sgx_report_t* p_report) {
-	    ////sgx_report_data_t report_data = { 0 };
 
     // Generate the report for the app_enclave
     sgx_status_t  sgx_error = sgx_create_report(p_qe3_target, reportData, p_report);
