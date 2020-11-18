@@ -20,18 +20,24 @@ import (
 )
 
 var (
-	defaultLog        = log.GetDefaultLogger()
-	secLog            = log.GetSecurityLogger()
-	enclaveInitStatus C.int
+	defaultLog = log.GetDefaultLogger()
+	secLog     = log.GetSecurityLogger()
 )
+
+// SocketHandler holds
+type SocketHandler struct {
+	Config *config.Configuration
+}
 
 // EnclaveInit initializes the tenant app enclave
 func (sh *SocketHandler) EnclaveInit() error {
 	defaultLog.Trace("controller/socket_handler:EnclaveInit Entering")
 	defer defaultLog.Trace("controller/socket_handler:EnclaveInit Leaving")
 
+	var enclaveInitStatus C.int
+
 	// initialize enclave
-	enclaveInitStatus = C.init(C.bool(true))
+	enclaveInitStatus = C.init(C.bool(sh.Config.StandAloneMode))
 
 	if enclaveInitStatus != 0 {
 		return errors.Errorf("controller/socket_handler:EnclaveInit Failed to initialize enclave. Error code: %d", enclaveInitStatus)
@@ -59,10 +65,6 @@ func (sh *SocketHandler) EnclaveDestroy() error {
 	return nil
 }
 
-type SocketHandler struct {
-	Config *config.Configuration
-}
-
 // HandleConnect handles connect request from Verifier app
 func (sh *SocketHandler) HandleConnect(req domain.VerifierAppRequest) (*domain.TenantAppResponse, error) {
 	defaultLog.Trace("controller/socket_handler:HandleConnect Entering")
@@ -70,10 +72,6 @@ func (sh *SocketHandler) HandleConnect(req domain.VerifierAppRequest) (*domain.T
 
 	var resp domain.TenantAppResponse
 	var err error
-
-	if enclaveInitStatus != 0 {
-		return nil, errors.Errorf("controller/socket_handler:HandleConnect Error initializing enclave - error code %d", enclaveInitStatus)
-	}
 
 	resp.RequestType = req.RequestType
 
