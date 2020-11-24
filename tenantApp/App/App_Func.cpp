@@ -232,10 +232,8 @@ int initialize_enclave(void)
 int destroy_Enclave() {
 	cout << "destroying enclave" <<endl;
 
-	//if (mode == true) {
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
-	//}
     
     printf("Info: SampleEnclave successfully returned.\n");
 
@@ -324,20 +322,17 @@ uint8_t* get_SGX_Quote(int* x) {
 					if(SGX_QL_SUCCESS != qe3_ret) {
 									printf("Error in set enclave load policy: 0x%04x\n", qe3_ret);
 									ret = -1;
-									//goto CLEANUP;
 					}
 					printf("successful in setting load policy!\n");
 					qe3_ret = sgx_ql_set_path(SGX_QL_PCE_PATH, "/usr/lib64/libsgx_pce.signed.so");
 					if(SGX_QL_SUCCESS != qe3_ret) {
 									printf("Error in set PCE directory: 0x%04x.\n", qe3_ret);
 									ret = -1;
-									//goto CLEANUP;
 					}
 					qe3_ret = sgx_ql_set_path(SGX_QL_QE3_PATH, "/usr/lib64/libsgx_qe3.signed.so");
 					if(SGX_QL_SUCCESS != qe3_ret) {
 									printf("Error in set QE3 directory: 0x%04x.\n", qe3_ret);
 									ret = -1;
-									//goto CLEANUP;
 					}
 					qe3_ret = sgx_ql_set_path(SGX_QL_QPL_PATH, "/usr/lib64/libdcap_quoteprov.so.1");
 					if(SGX_QL_SUCCESS != qe3_ret) {
@@ -348,17 +343,14 @@ uint8_t* get_SGX_Quote(int* x) {
 					if (SGX_QL_SUCCESS != qe3_ret) {
 									printf("Error in sgx_qe_get_target_info. 0x%04x\n", qe3_ret);
 									ret = -1;
-									//goto CLEANUP;
 					}
 					printf("succeed!");
 
-					//printf("succeed! %s: ", *app_report);
 					printf("\nStep3: Call sgx_qe_get_quote_size:");
 					qe3_ret = sgx_qe_get_quote_size(&quote_size);
 					if (SGX_QL_SUCCESS != qe3_ret) {
 									printf("Error in sgx_qe_get_quote_size. 0x%04x\n", qe3_ret);
 									ret = -1;
-									//goto CLEANUP;
 					}
 					printf("succeed quote_size: %d\n", quote_size);
 
@@ -366,7 +358,6 @@ uint8_t* get_SGX_Quote(int* x) {
 					if (NULL == p_quote_buffer) {
 									printf("Couldn't allocate quote_buffer\n");
 									ret = -1;
-									//goto CLEANUP;
 					}
 					memset(p_quote_buffer, 0, quote_size);
 
@@ -395,7 +386,6 @@ uint8_t* get_SGX_Quote(int* x) {
 					if ((SGX_SUCCESS != status) || (0 != retval)) {
 									printf("\nCall to get_app_enclave_report() failed\n");
 									ret = false;
-									//goto CLEANUP;
 					}
 
 					// Get the Quote
@@ -406,7 +396,6 @@ uint8_t* get_SGX_Quote(int* x) {
 					if (SGX_QL_SUCCESS != qe3_ret) {
 									printf( "Error in sgx_qe_get_quote. 0x%04x\n", qe3_ret);
 									ret = -1;
-									//goto CLEANUP;
 					}
 
 					CK_RSA_PUBLIC_KEY_PARAMS* rsaPublicKeyParam_ = (CK_RSA_PUBLIC_KEY_PARAMS*)(p_quote_buffer);
@@ -426,7 +415,6 @@ uint8_t* get_SGX_Quote(int* x) {
 					if (NULL == cert_information) {
 									printf("Couldn't allocate cert_information buffer\n");
 									ret = -1;
-									//goto CLEANUP;
 					}
 					memset(cert_information, 0, certSize);
 					memcpy(cert_information, (unsigned char*)( p_cert_data->certification_data), certSize);
@@ -491,7 +479,6 @@ uint8_t* get_SGX_Quote(int* x) {
 					if(SGX_QL_SUCCESS != qe3_ret) {
 									printf("Error in cleanup enclave load policy: 0x%04x\n", qe3_ret);
 									ret = -1;
-									//goto CLEANUP;
 					}
 					printf("succeed!\n");
 					*x = sizeof(quote_info)+pckCertSize+quote_size+REF_E_SIZE_IN_BYTES+REF_N_SIZE_IN_BYTES;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2020 Intel Corporation. All rights reserved.
+ * Copyright (C) 2020-2021 Intel Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,7 +42,6 @@ extern "C" {
 #endif
 
 int printf(const char* fmt, ...);
-//sgx_status_t enclave_pubkey(ref_rsa_params_t* pKey, int* count);
 
 #if defined(__cplusplus)
 }

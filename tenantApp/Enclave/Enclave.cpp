@@ -35,7 +35,6 @@
 #include <stdio.h> /* vsnprintf */
 #include <string.h>
 #include <sgx_tcrypto.h>
-//#include <sgx_param.h>
 #include <user_types.h>
 
 ///Following is needed for report generation.
@@ -60,8 +59,6 @@ int printf(const char* fmt, ...)
     va_start(ap, fmt);
     vsnprintf(buf, BUFSIZ, fmt, ap);
     va_end(ap);
-    //ocall_print_string(buf);
-    //ocall_print_string1(buf);
     return (int)strnlen(buf, BUFSIZ - 1) + 1;
 }
 

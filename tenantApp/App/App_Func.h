@@ -52,7 +52,6 @@
 #endif
 
 # define TOKEN_FILENAME   "enclave.token"
-//# define ENCLAVE_FILENAME "enclave.signed.so"
 # define ENCLAVE_FILENAME "/usr/lib64/libenclave_signed.so"
 
 extern sgx_enclave_id_t global_eid;    /* global enclave id */
@@ -70,7 +69,6 @@ void unwrap_Secret();
 
 int SGX_CDECL init(bool argc);
 int destroy_Enclave();
-//#endif
 
 #if defined(__cplusplus)
 }
