@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2020 Intel Corporation. All rights reserved.
+ * Copyright (C) 2020-2021 Intel Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,22 +42,11 @@ include "sgx_report.h"
      *  [*]: implies to import all functions.
      */
     
-    /*from "Edger8rSyntax/Types.edl" import *;
-    from "Edger8rSyntax/Pointers.edl" import *;
-    from "Edger8rSyntax/Arrays.edl" import *;
-    from "Edger8rSyntax/Functions.edl" import *;*/
-
-
     trusted {
 	public sgx_status_t enclave_pubkey ([out]ref_rsa_params_t* pubkey, [out]int *count);
 
 
 public uint32_t enclave_create_report([in]const sgx_target_info_t* p_qe3_target, [in]const sgx_report_data_t* reportData, [out]sgx_report_t* p_report);
-
-
-            /*public void provision_pubkey_wrapped_swk ([in] * uint8_t pubkey_wrapped_swk, [in] int count);
-            public void provision_swk_wrapped_secret ([in] * uint8_t swk_wrapped_secret, [in] int count);*/
-
     };
 
     /* 
