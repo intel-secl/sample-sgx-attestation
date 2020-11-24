@@ -42,7 +42,6 @@ func (e resourceError) Error() string {
 type AppVerifierController struct {
 	TenantAppSocketAddr string
 	Config              *config.Configuration
-	ExtVerifier         ExternalVerifier
 	SaVerifier          StandaloneVerifier
 	SgxQuotePolicyPath  string
 }
@@ -292,11 +291,11 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte) error {
 	qData := base64.StdEncoding.EncodeToString(quote)
 
 	defaultLog.Printf("Standalone mode is set to %s", strconv.FormatBool(ca.Config.StandAloneMode))
+
 	// based on the operation mode - standalone or non-standalone mode
 	if !ca.Config.StandAloneMode {
-		// call goes to SQVS
-		defaultLog.Printf("Calling out to SQVS - ExternalVerifier")
-		err = ca.ExtVerifier.VerifyQuote(qData)
+		// ExternalVerifier when implemented would forward the call to SQVS
+		err = errors.New("Non-standalone mode is not supported in this release")
 	} else {
 		// call is handled by stub
 		defaultLog.Printf("Calling out to StandaloneVerifier")
