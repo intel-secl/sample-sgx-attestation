@@ -56,7 +56,7 @@ int SGX_CDECL main(int argc, char *argv[])
     (void)(argv);
 
     int status = 0;
-    status = init(true);
+    status = init(false);
 		
 if (status != 0) {
 	cout << "failed to initialize enclave" << endl;

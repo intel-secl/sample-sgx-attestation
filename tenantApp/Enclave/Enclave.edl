@@ -42,10 +42,10 @@ include "sgx_report.h"
      *  [*]: implies to import all functions.
      */
     
-    from "Edger8rSyntax/Types.edl" import *;
+    /*from "Edger8rSyntax/Types.edl" import *;
     from "Edger8rSyntax/Pointers.edl" import *;
     from "Edger8rSyntax/Arrays.edl" import *;
-    from "Edger8rSyntax/Functions.edl" import *;
+    from "Edger8rSyntax/Functions.edl" import *;*/
 
 
     trusted {

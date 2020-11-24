@@ -517,11 +517,7 @@ int SGX_CDECL init(bool argc)
     printf("init called\n");
     mode = argc;
 
-    //printf("mode is: %d\n", mode);
-    /*if (argc == true) {
-	    printf("initialization done for standalone mode.\n");
-	    return 0;
-    }*/
+    printf("mode is: %d\n", mode);
 
     /* Following code is for Non StandAlone mode that will be used in 3.3 release.
      * Initialize the enclave 
