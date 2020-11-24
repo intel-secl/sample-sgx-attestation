@@ -26,18 +26,18 @@ func (ev StandaloneVerifier) VerifyQuote(quoteData string) error {
 
 	// based on the type of quote that is parsed, we extract
 	if parsedBlob.GetQuoteType() == parser.QuoteTypeEcdsa {
-		return sgxEcdsaQuoteVerify(parsedBlob, ev.Config)
+		return sgxEcdsaQuoteVerify(parsedBlob)
 	} else if parsedBlob.GetQuoteType() == parser.QuoteTypeSw {
-		return swQuoteVerify(parsedBlob, ev.Config)
+		return swQuoteVerify(parsedBlob)
 	} else {
 		return &resourceError{Message: "cannot find sw/ecdsa quote",
 			StatusCode: http.StatusBadRequest}
 	}
 }
 
-// swQuoteVerify parses the SwQuote
-func swQuoteVerify(skcBlobParser *parser.SkcBlobParsed, conf *config.Configuration) error {
-	_, err := skcBlobParser.GetRsaPubKey()
+// swQuoteVerify verifies swQuote by extracting public key from parsed quote
+func swQuoteVerify(skcBlobParsed *parser.SkcBlobParsed) error {
+	_, err := skcBlobParsed.GetRsaPubKey()
 	if err != nil {
 		return &resourceError{Message: "GetRsaPubKey: Error: " + err.Error(),
 			StatusCode: http.StatusInternalServerError}
@@ -47,7 +47,7 @@ func swQuoteVerify(skcBlobParser *parser.SkcBlobParsed, conf *config.Configurati
 }
 
 // sgxEcdsaQuoteVerify verifies quotes of ECDSA type
-func sgxEcdsaQuoteVerify(skcBlobParser *parser.SkcBlobParsed, conf *config.Configuration) error {
+func sgxEcdsaQuoteVerify(skcBlobParser *parser.SkcBlobParsed) error {
 	if len(skcBlobParser.GetQuoteBlob()) == 0 {
 		return &resourceError{Message: "invalid sgx ecdsa quote", StatusCode: http.StatusBadRequest}
 	}
