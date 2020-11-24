@@ -157,7 +157,6 @@ SGX tenant app        | SGX workload app   | C             | Yes                
 4. Once done, the enclave's public key is extracted out of the extended quote, and a symmetric secret wrapping key (SWK) is generated and wrapped using the enclave public key. For StandAlone mode this process is stubbed.
 5. This wrapped SWK is sent to the tenant app service, which passes this on to the SGX enclave app. For StanAlone mode this process is stubbed. Only the API call is made. In future release, swk unwrapping will happen in the API call.
 6. The enclave app then extracts the SWK out of the payload and responds if it is able to do so. This response is transmitted back to the verifier app. Since the previousstep is stubbed, for standalone mode app don't unwrap the SWK.
-7. The verifier app then sends the secret payload wrapped using the SWK to the tenant app service. For StanAlone mode
- this process is stubbed. Only the API call is made.
-8. The tenant app service passes it on to SGX workload inside the enclave. If the secret is unwrapped using the SWKinside the enclave, then the success response is sent back to the verifier app. Since the previous step is stubbed, for standalone mode app don't unwrap the secret.
+7. The verifier app then sends the secret payload wrapped using the SWK to the tenant app service. For StandAlone mode this process is stubbed. Only the API call is made.
+8. The tenant app service passes it on to SGX workload inside the enclave. If the secret is unwrapped using the SWK inside the enclave, then the success response is sent back to the verifier app. Since the previous step is stubbed, for standalone mode app don't unwrap the secret.
 9. Verifier repeats the entire workflow in the event of a failure at any step and exits when all the steps from 1-8 have completed successfully.
