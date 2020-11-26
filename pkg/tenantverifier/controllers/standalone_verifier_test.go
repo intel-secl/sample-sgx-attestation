@@ -14,7 +14,7 @@ import (
 
 func TestStandaloneVerifier_VerifyQuote(t *testing.T) {
 	sv := StandaloneVerifier{Config: &config.Configuration{TrustedRootCAPath: "../test/rootcacerts/root_ca.pem"}}
-	quoteRaw, _ := ioutil.ReadFile("../test/tenant_extended_quote.dat")
+	quoteRaw, _ := ioutil.ReadFile("../../../tenantApp/quote.dat")
 	// we need to convert to base64 before sending to verifier
 	assert.NoError(t, sv.VerifyQuote(base64.StdEncoding.EncodeToString(quoteRaw)))
 }
