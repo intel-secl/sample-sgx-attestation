@@ -41,12 +41,8 @@ func (a *App) startVerifier() error {
 	verifyController := controllers.AppVerifierController{
 		TenantAppSocketAddr: strings.Join([]string{constants.DefaultTenantAppListenHost, strconv.Itoa(constants.DefaultAppListenerPort)}, ":"),
 		Config:              c,
-		ExtVerifier: controllers.ExternalVerifier{
-			Config:     c,
-			CaCertsDir: constants.CaCertsDir,
-		},
-		SaVerifier:         controllers.StandaloneVerifier{},
-		SgxQuotePolicyPath: constants.SgxQuotePolicyPath,
+		SaVerifier:          controllers.StandaloneVerifier{},
+		SgxQuotePolicyPath:  constants.SgxQuotePolicyPath,
 	}
 	// kick off the workflow
 	for !verifyController.VerifyTenantAndShareSecret() {
