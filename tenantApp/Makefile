@@ -282,4 +282,5 @@ $(Signed_Enclave_Name): $(Enclave_Name)
 
 .PHONY: clean
 clean:
-	@rm -f .config_* $(AppLibrary) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) $(App_Cpp_Main_Objects) $(App_Name) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.*
+	@rm -rf .config_* $(AppLibrary) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) $(App_Cpp_Main_Objects) $(App_Name) App/Enclave_u.* $(Enclave_Cpp_Objects) Enclave/Enclave_t.*  App/Edger8rSyntax/ Enclave/Edger8rSyntax/
+

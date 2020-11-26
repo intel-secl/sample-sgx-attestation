@@ -4,7 +4,7 @@ GITCOMMITDATE := $(shell git log -1 --date=short --pretty=format:%cd)
 VERSION := $(or ${GITTAG}, v3.2.0)
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 
-.PHONY: clean tenantapp tenantappservice verifier test
+default: all
 
 tenantapp:
 	cd tenantApp/ && $(MAKE) all
@@ -34,12 +34,13 @@ tenantappservice-installer: tenantappservice
 	rm -rf installer
 
 test:
-	go test ./... -coverprofile cover.out
+	GOPRIVATE=gitlab.devtools.intel.com/* go test ./... -coverprofile cover.out
 	go tool cover -func cover.out
 	go tool cover -html=cover.out -o cover.html
 
-all: clean verifier-installer tenantappservice-installer test
+all: clean tenantapp verifier-installer tenantappservice-installer
 
 clean:
-	cd tenantApp && make clean
-	rm -rf out/ installer/ pkg/tenantappservice/out pkg/tenantverifier/out
+	make -C tenantApp clean
+	rm -rf go.sum out/ installer/ pkg/tenantappservice/out pkg/tenantverifier/out cover.*
+
