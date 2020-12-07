@@ -128,7 +128,7 @@ sgx-tenantapp-service start
 
 ```bash
 # Get usage information
-sgx-tenant-service --help
+sgx-tenantapp-service --help
 ```
 
 ```bash
