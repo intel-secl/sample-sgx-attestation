@@ -6,5 +6,5 @@ package controllers
 
 // QuoteVerifier is an interface implemented by any entity that can verify SGX Quote
 type QuoteVerifier interface {
-	VerifyQuote([]byte) error
+	VerifyQuote([]byte, []byte) (error, QuoteVerifyAttributes)
 }

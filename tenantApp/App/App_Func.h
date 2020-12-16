@@ -63,7 +63,8 @@ int initialize_enclave(void);
 extern "C" {
 #endif
 int get_Key();
-uint8_t* get_SGX_Quote(int* x);
+//uint8_t* get_SGX_Quote(int* x, int *y, uint8_t* publicKey);
+uint8_t* get_SGX_Quote(int* x, int *y);
 void unwrap_SWK();
 void unwrap_Secret();
 

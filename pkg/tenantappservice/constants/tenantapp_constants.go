@@ -79,6 +79,7 @@ const (
 //Response Element
 const (
 	ResponseElementTypeSGXQuote uint8 = 1
+	ResponseElementTypeEnclavePubKey uint8 = 2
 )
 
 const (

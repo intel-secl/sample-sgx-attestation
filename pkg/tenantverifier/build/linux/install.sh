@@ -18,8 +18,9 @@ PRODUCT_HOME=/opt/$COMPONENT_NAME
 BIN_PATH=$PRODUCT_HOME/bin
 LOG_PATH=/var/log/$COMPONENT_NAME/
 CONFIG_PATH=/etc/$COMPONENT_NAME/
+CERTS_PATH=$CONFIG_PATH/ca-certs
 
-for directory in $BIN_PATH $LOG_PATH $CONFIG_PATH; do
+for directory in $BIN_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
@@ -73,7 +74,7 @@ if [ "${SGXAPPVERIFIER_NOSETUP}" == "true" ]; then
     echo "Run \"$COMPONENT_NAME setup all\" for manual setup"
     echo "Installation completed successfully!"
 else 
-    $COMPONENT_NAME setup -f $env_file
+    $COMPONENT_NAME setup all -f $env_file
     SETUPRESULT=$?
     chown -R sgx-app-verifier:sgx-app-verifier "$CONFIG_PATH"
     if [ ${SETUPRESULT} == 0 ]; then

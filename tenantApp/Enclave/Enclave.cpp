@@ -47,7 +47,6 @@
 using namespace std;
 
 
-
 /* 
  * printf: 
  *   Invokes OCALL to display the enclave buffer to the terminal.
@@ -62,32 +61,54 @@ int printf(const char* fmt, ...)
     return (int)strnlen(buf, BUFSIZ - 1) + 1;
 }
 
-sgx_status_t enclave_pubkey(ref_rsa_params_t* g_rsa_key, int* count) {
+static ref_rsa_params_t g_rsa_key;
 
-	g_rsa_key->e[0] = 0x10001;
+sgx_status_t enclave_pubkey(ref_rsa_params_t* key, int* count) {
+
+	g_rsa_key.e[0] = 0x10001;
+	key->e[0] = 0x10001;
+
 	sgx_status_t ret_code = sgx_create_rsa_key_pair(REF_N_SIZE_IN_BYTES,
             REF_E_SIZE_IN_BYTES,
-	    (unsigned char*)g_rsa_key->n,
-	    (unsigned char*)g_rsa_key->d,
-	    (unsigned char*)g_rsa_key->e,
-	    (unsigned char*)g_rsa_key->p,
-	    (unsigned char*)g_rsa_key->q,
-	    (unsigned char*)g_rsa_key->dmp1,
-	    (unsigned char*)g_rsa_key->dmq1,
-	    (unsigned char*)g_rsa_key->iqmp);
+	    (unsigned char*)g_rsa_key.n,
+	    (unsigned char*)g_rsa_key.d,
+	    (unsigned char*)g_rsa_key.e,
+	    (unsigned char*)g_rsa_key.p,
+	    (unsigned char*)g_rsa_key.q,
+	    (unsigned char*)g_rsa_key.dmp1,
+	    (unsigned char*)g_rsa_key.dmq1,
+	    (unsigned char*)g_rsa_key.iqmp);
 
         if (ret_code != SGX_SUCCESS) {
 		return ret_code;
         }
 
+	for(int i=0; i<REF_N_SIZE_IN_BYTES; i++) {
+	key->n[i] = g_rsa_key.n[i];
+	}
+	for(int i=0; i<REF_E_SIZE_IN_BYTES; i++) {
+	key->e[i] = g_rsa_key.e[i];
+	}
 	return SGX_SUCCESS;
 }
 
-uint32_t enclave_create_report(const sgx_target_info_t* p_qe3_target, const sgx_report_data_t* reportData, sgx_report_t* p_report) {
+uint32_t enclave_create_report(const sgx_target_info_t* p_qe3_target, sgx_report_data_t* reportData, sgx_report_t* p_report) {
 
-    // Generate the report for the app_enclave
-    sgx_status_t  sgx_error = sgx_create_report(p_qe3_target, reportData, p_report);
+	const uint32_t size = REF_N_SIZE_IN_BYTES + REF_E_SIZE_IN_BYTES;
 
-    return sgx_error;
+	uint8_t buffer[REF_N_SIZE_IN_BYTES + REF_E_SIZE_IN_BYTES];
+	uint8_t* pdata = &buffer[0];
+	unsigned char* exponent = ((unsigned char *)g_rsa_key.e);
+	unsigned char* modulus = ((unsigned char *)g_rsa_key.n);
+	memcpy(pdata, exponent, REF_E_SIZE_IN_BYTES);
+	memcpy(pdata+REF_E_SIZE_IN_BYTES, modulus, REF_N_SIZE_IN_BYTES);
 
+	uint8_t msg_hash[64] = {0};
+	sgx_status_t status = sgx_sha256_msg(pdata, size, (sgx_sha256_hash_t *)msg_hash);
+	memcpy(reportData->d, msg_hash, sizeof(msg_hash));
+
+	// Generate the report for the app_enclave
+	sgx_status_t  sgx_error = sgx_create_report(p_qe3_target, reportData, p_report);
+
+	return sgx_error;
 }

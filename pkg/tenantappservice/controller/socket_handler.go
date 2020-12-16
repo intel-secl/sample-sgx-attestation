@@ -95,17 +95,26 @@ func (sh *SocketHandler) HandleConnect(req domain.VerifierAppRequest) (*domain.T
 		defaultLog.Print("Getting quote from the Tenant App Enclave")
 
 		var qBytes []byte
+		var kBytes []byte
 		// qSize holds the length of the quote byte array returned from enclave
 		var qSize C.int
+		var keySize C.int
 		// qPtr holds the bytes array of the quote returned from enclave
 		var qPtr *C.u_int8_t
-		qPtr = C.get_SGX_Quote(&qSize)
+
+		qPtr = C.get_SGX_Quote(&qSize, &keySize)
 		qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
+		kBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize+keySize)
 
 		defaultLog.Printf("Fetched quote is of length %d", len(qBytes))
+		defaultLog.Printf("Fetched public key is of length %d", len(kBytes))
+
 		if qBytes == nil || qSize == C.int(0) {
 			resp.RespCode = constants.ResponseCodeFailure
 			err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant App Quote")
+		} else if kBytes == nil || keySize == C.int(0) {
+			resp.RespCode = constants.ResponseCodeFailure
+			err = errors.New("controller/socket_handler:HandleConnect Error fetching Tenant Nonce")
 		} else {
 			resp.RespCode = constants.ResponseCodeSuccess
 			resp.Elements = []domain.TenantAppMessageElement{
@@ -113,6 +122,11 @@ func (sh *SocketHandler) HandleConnect(req domain.VerifierAppRequest) (*domain.T
 					Type:    constants.ResponseElementTypeSGXQuote,
 					Length:  uint16(len(qBytes)),
 					Payload: qBytes,
+				},
+				{
+					Type:    constants.ResponseElementTypeEnclavePubKey,
+					Length:  uint16(keySize),
+					Payload: kBytes[len(qBytes):len(kBytes)],
 				},
 			}
 			resp.ParamLength = uint16(len(resp.Elements))

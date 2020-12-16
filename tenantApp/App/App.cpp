@@ -56,7 +56,7 @@ int SGX_CDECL main(int argc, char *argv[])
     (void)(argv);
 
     int status = 0;
-    status = init(true);
+    status = init(false);
 		
 if (status != 0) {
 	cout << "failed to initialize enclave" << endl;
@@ -66,12 +66,17 @@ if (status != 0) {
 }
 
     ///Ecalls will come here. Call here and defins in enclave.cpp
-    status = get_Key();
-    int size = 0;
-    uint8_t* quote = get_SGX_Quote(&size);
+    int size, key_size = 0;
+    uint8_t* publicKey = NULL;
+    uint8_t* quote = get_SGX_Quote(&size, &key_size);
     printf("size of quote is: %d\n", size);
+    printf("size of key is: %d\n", key_size);
     uint8_t* p_quote = (uint8_t*)malloc(size);
     memcpy(p_quote, quote, size);
+
+    publicKey = (uint8_t*)malloc(key_size);
+
+    memcpy(publicKey, p_quote+key_size, key_size);
 
     unwrap_SWK();
     unwrap_Secret();

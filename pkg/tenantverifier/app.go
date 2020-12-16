@@ -5,6 +5,7 @@
 package main
 
 import (
+	"crypto/x509/pkix"
 	"fmt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tasks"
 	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/config"
@@ -15,9 +16,12 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	commLogInt "intel/isecl/lib/common/v3/log/setup"
+	"intel/isecl/lib/common/v3/setup"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
+	"syscall"
 )
 
 var errInvalidCmd = errors.New("Invalid input after command")
@@ -39,7 +43,6 @@ type App struct {
 }
 
 func (a *App) Run(args []string) error {
-	var err error
 	defer func() {
 		if err := recover(); err != nil {
 			defaultLog.Errorf("Panic occurred: %+v", err)
@@ -68,6 +71,22 @@ func (a *App) Run(args []string) error {
 			return errInvalidCmd
 		}
 		return a.startVerifier()
+	case "start":
+		if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.start()
+	case "stop":
+		if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.stop()
+	case "status":
+		if len(args) != 2 {
+			return errInvalidCmd
+		}
+		return a.status()
+
 	case "uninstall":
 		// the only allowed flag is --purge
 		purge := false
@@ -108,13 +127,75 @@ func (a *App) Run(args []string) error {
 		viper.AutomaticEnv()
 		if a.configuration() == nil {
 			a.Config = defaultConfig()
-			err = a.Config.Save(constants.DefaultConfigFilePath)
+			err := a.Config.Save(constants.DefaultConfigFilePath)
+			if err != nil {
+				fmt.Println("Error saving configuration: " + err.Error())
+				os.Exit(1)
+			}
+
+		}
+		if args[2] != "download_ca_cert" &&
+			args[2] != "download_cert" &&
+			args[2] != "service" &&
+			args[2] != "all" {
+			a.printUsage()
+			return errors.New("No such setup task")
 		}
 
+		task := strings.ToLower(args[2])
+		setupRunner := &setup.Runner{
+			Tasks: []setup.Task{
+				&tasks.Service{
+					SvcConfigPtr:        &a.Config.Service,
+					AASApiUrlPtr:        &a.Config.AASApiUrl,
+					CMSBaseURLPtr:       &a.Config.CMSBaseURL,
+					CmsTlsCertDigestPtr: &a.Config.CmsTlsCertDigest,
+					ServiceConfig: config.ServiceConfig{
+						Username: viper.GetString("verifier-username"),
+						Password: viper.GetString("verifier-password"),
+					},
+					AASApiUrl:        viper.GetString("aas-base-url"),
+					CMSBaseURL:       viper.GetString("cms-base-url"),
+					CmsTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
+					ConsoleWriter:    os.Stdout,
+				},
+			},
+			AskInput: false,
+		}
+		if !a.Config.StandAloneMode {
+			setupRunner.Tasks = append(setupRunner.Tasks, &setup.Download_Ca_Cert{
+				CaCertDirPath:        constants.CaCertsDir,
+				ConsoleWriter:        a.consoleWriter(),
+				CmsBaseURL:           viper.GetString("cms-base-url"),
+				TrustedTlsCertDigest: viper.GetString("cms-tls-cert-sha384"),
+			},
+				&setup.Download_Cert{
+					KeyFile:            a.Config.TLS.KeyFile,
+					CertFile:           a.Config.TLS.CertFile,
+					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
+					KeyAlgorithmLength: constants.DefaultKeyLength,
+					CmsBaseURL:         a.Config.CMSBaseURL,
+					Subject: pkix.Name{
+						CommonName: a.Config.TLS.CommonName,
+					},
+					SanList:       a.Config.TLS.SANList,
+					CertType:      "TLS",
+					CaCertsDir:    constants.CaCertsDir,
+					BearerToken:   "",
+					ConsoleWriter: os.Stdout,
+				})
+		}
+		var err error
+		if task == "all" {
+			err = setupRunner.RunTasks()
+		} else {
+			err = setupRunner.RunTasks(task)
+		}
 		if err != nil {
 			fmt.Println("Error running setup: ", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
 		}
+
 		fmt.Println("Setup completed successfully")
 	}
 	return nil
@@ -186,4 +267,31 @@ func (a *App) configureLogs(stdOut, logFile bool) error {
 	secLog.Info(commLogMsg.LogInit)
 	defaultLog.Info(commLogMsg.LogInit)
 	return nil
+}
+
+func (a *App) start() error {
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-app-verifier"`)
+	systemctl, err := exec.LookPath("systemctl")
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-app-verifier"}, os.Environ())
+}
+
+func (a *App) stop() error {
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-app-verifier"`)
+	systemctl, err := exec.LookPath("systemctl")
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-app-verifier"}, os.Environ())
+}
+
+func (a *App) status() error {
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-app-verifier"`)
+	systemctl, err := exec.LookPath("systemctl")
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-app-verifier"}, os.Environ())
 }

@@ -22,6 +22,7 @@ type Configuration struct {
 	CMSBaseURL        string        `yaml:"cms-base-url" mapstructure:"cms-base-url"`
 	CmsTlsCertDigest  string        `yaml:"cms-tls-cert-sha384" mapstructure:"cms-tls-cert-sha384"`
 	SqvsUrl           string        `yaml:"sqvs-url" mapstructure:"sqvs-url"`
+	Service           ServiceConfig `yaml:"service" mapstructure:"service"`
 	TLS               TLSCertConfig `yaml:"tls" mapstructure:"tls"`
 	Server            ServerConfig  `yaml:"server" mapstructure:"server"`
 	Log               LogConfig     `yaml:"log" mapstructure:"log"`
@@ -47,6 +48,11 @@ type TLSCertConfig struct {
 	KeyFile    string `yaml:"key-file" mapstructure:"key-file"`
 	CommonName string `yaml:"common-name" mapstructure:"common-name"`
 	SANList    string `yaml:"san-list" mapstructure:"san-list"`
+}
+
+type ServiceConfig struct {
+	Username string `yaml:"verifier-username" mapstructure:"verifier-username"`
+	Password string `yaml:"verifier-password" mapstructure:"verifier-password"`
 }
 
 // this function sets the configure file name and type

@@ -31,17 +31,14 @@ func (a *App) startVerifier() error {
 		return err
 	}
 
-	if !c.StandAloneMode {
-		secLog.Fatal(errors.New("Non-standalone mode is not supported in this release"))
-	}
-
 	defaultLog.Info("Starting Tenant App Verifier server")
 
 	// start the quote verification
 	verifyController := controllers.AppVerifierController{
 		TenantAppSocketAddr: strings.Join([]string{constants.DefaultTenantAppListenHost, strconv.Itoa(constants.DefaultAppListenerPort)}, ":"),
 		Config:              c,
-		SaVerifier:          controllers.StandaloneVerifier{},
+		SaVerifier:          controllers.StandaloneVerifier{c},
+		NSaVerifier:         controllers.ExternalVerifier{c, constants.CaCertsDir},
 		SgxQuotePolicyPath:  constants.SgxQuotePolicyPath,
 	}
 	// kick off the workflow

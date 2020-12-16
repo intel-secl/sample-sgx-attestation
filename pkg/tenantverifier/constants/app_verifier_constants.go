@@ -15,7 +15,7 @@ const (
 	TenantPassword  = "tenantpassw0rd"
 
 	// service remove command
-	VerifyQuote                = "/verifyQuote"
+	VerifyQuote                = "/sgx_qv_verify_quote"
 	DefaultTenantAppListenHost = "127.0.0.1"
 )
 

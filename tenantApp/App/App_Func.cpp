@@ -60,55 +60,13 @@ sgx_enclave_id_t global_eid = 0;
 sgx_status_t status = SGX_SUCCESS;
 bool mode = true;
 
-u_int32_t major_no = 1;
-u_int32_t minor_no = 0;
-
-static ref_rsa_params_t g_rsa_key;
-
-typedef struct CK_RSA_PUBLIC_KEY_PARAMS {
-	long ulExponentLen;
-	long ulModulusLen;
-} CK_RSA_PUBLIC_KEY_PARAMS;
-
+static ref_rsa_params_t g_rsa_key1 = {0};
 
 typedef struct _sgx_errlist_t {
 	sgx_status_t err;
 	const char *msg;
 	const char *sug; /* Suggestion */
 } sgx_errlist_t;
-
-typedef struct ecdsa_quote_verify_data
-{
-	u_int32_t  pckCert_size;
-}ecdsa_quote_verify_data;
-
-typedef struct sw_quote_verify_data{
-	u_int32_t dummy;
-}sw_quote_verify_data;
-
-typedef union qdetails {
-	ecdsa_quote_verify_data ecdsa_quote_details;
-	sw_quote_verify_data sw_quto_details;
-}apimodule_quote_details;
-
-
-struct keyagent_sgx_quote_info {
-	u_int32_t major_num;
-	u_int32_t minor_num;
-	u_int32_t quote_size;
-	u_int32_t quote_type;
-	u_int32_t keytype;
-	union {
-		struct {
-			u_int32_t exponent_len;
-			u_int32_t modulus_len;
-		}rsa;
-		struct {
-			u_int32_t dummy;
-		}ec;
-	}keydetails;
-	apimodule_quote_details quote_details;
-};
 
 /* Error code returned by sgx_create_enclave */
 static sgx_errlist_t sgx_errlist[] = {
@@ -260,13 +218,15 @@ void ocall_print_string1(const char *str)
 
 int get_Key()
 {
+	printf("\n getting the public key\n");
 	if (mode ==true) {
 		printf("Current mode is standalone mode.\n");
 		return 0;
 	}
 
 	int count;
-	enclave_pubkey(global_eid, &status, &g_rsa_key, &count);
+	enclave_pubkey(global_eid, &status, &g_rsa_key1, &count);
+	printf("\n");
 	if (status != SGX_SUCCESS) {
 		print_error_message(status);
 		return -1;
@@ -274,18 +234,18 @@ int get_Key()
 	return 0;
 }
 
-uint8_t* get_SGX_Quote(int* x) {
+uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
 	if (mode ==true) {
 		printf("Getting quote in standalone mode\n");
 		FILE *fptr = NULL;
-		fptr = fopen("/tmp/quote.dat","rb");
+		fptr = fopen("/tmp/quote_nonStandAloneMode.dat","rb");
 		if (fptr==NULL) {cout << "cant open quote.dat file\n"<< endl; return 0; }
 
 		// obtain file size:
 		fseek (fptr, 0 , SEEK_END);
 		int lSize = ftell (fptr);
-		*x = lSize;
-		cout << "quote size: " << lSize << endl;
+		*qSize = 4578;
+		*kSize = 388;
 		rewind (fptr);
 
 		// allocate memory to contain the whole file:
@@ -297,192 +257,149 @@ uint8_t* get_SGX_Quote(int* x) {
 		if (result != lSize) {cout << "error in  reading quote." << endl; return 0;}
 		return buffer;
 	} else {
-					/*
-					 * Following code is use din Non StandAlone Mode. This mode will
-					 * be used in future releases.
-					 */
-					cout << "generating quote in non stand alone mode" << endl;
-					int ret = 0;
-					uint32_t retval = 0;
-					quote3_error_t qe3_ret = SGX_QL_SUCCESS;
-					uint32_t quote_size = 0;
-					uint8_t* p_quote_buffer = NULL;
-					sgx_target_info_t qe_target_info;
-					sgx_report_t app_report;
-					sgx_report_data_t reportData{};
-					sgx_quote3_t *p_quote;
-					sgx_ql_auth_data_t *p_auth_data;
-					sgx_ql_ecdsa_sig_data_t *p_sig_data;
-					sgx_ql_certification_data_t *p_cert_data;
-					FILE *fptr = NULL;
 
-					CK_RSA_PUBLIC_KEY_PARAMS rsaPublicKeyParams{};
+		/*
+		 * Following code is used in Non StandAlone Mode. This mode will
+		 * be used in future releases.
+		 */
+		cout << "generating quote and nonce in non stand alone mode" << endl;
+		int ret = 0;
+		uint32_t retval = 0;
+		quote3_error_t qe3_ret = SGX_QL_SUCCESS;
+		uint32_t quote_size = 0;
+		uint8_t* p_quote_buffer = NULL;
+		uint8_t* key_buffer = NULL;
+		sgx_target_info_t qe_target_info;
+		sgx_report_t app_report;
+		sgx_report_data_t reportData{};
+		sgx_quote3_t *p_quote;
+		sgx_ql_auth_data_t *p_auth_data;
+		sgx_ql_ecdsa_sig_data_t *p_sig_data;
+		sgx_ql_certification_data_t *p_cert_data;
+		FILE *fptr = NULL;
 
-					qe3_ret = sgx_qe_set_enclave_load_policy(SGX_QL_PERSISTENT);
-					if(SGX_QL_SUCCESS != qe3_ret) {
-									printf("Error in set enclave load policy: 0x%04x\n", qe3_ret);
-									ret = -1;
-					}
-					printf("successful in setting load policy!\n");
-					qe3_ret = sgx_ql_set_path(SGX_QL_PCE_PATH, "/usr/lib64/libsgx_pce.signed.so");
-					if(SGX_QL_SUCCESS != qe3_ret) {
-									printf("Error in set PCE directory: 0x%04x.\n", qe3_ret);
-									ret = -1;
-					}
-					qe3_ret = sgx_ql_set_path(SGX_QL_QE3_PATH, "/usr/lib64/libsgx_qe3.signed.so");
-					if(SGX_QL_SUCCESS != qe3_ret) {
-									printf("Error in set QE3 directory: 0x%04x.\n", qe3_ret);
-									ret = -1;
-					}
-					qe3_ret = sgx_ql_set_path(SGX_QL_QPL_PATH, "/usr/lib64/libdcap_quoteprov.so.1");
-					if(SGX_QL_SUCCESS != qe3_ret) {
-									printf("Info: /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 not found.\n");
-					}
-					printf("\nStep1: Call sgx_qe_get_target_info:");
-					qe3_ret = sgx_qe_get_target_info(&qe_target_info);
-					if (SGX_QL_SUCCESS != qe3_ret) {
-									printf("Error in sgx_qe_get_target_info. 0x%04x\n", qe3_ret);
-									ret = -1;
-					}
-					printf("succeed!");
+		ret = get_Key();
 
-					printf("\nStep3: Call sgx_qe_get_quote_size:");
-					qe3_ret = sgx_qe_get_quote_size(&quote_size);
-					if (SGX_QL_SUCCESS != qe3_ret) {
-									printf("Error in sgx_qe_get_quote_size. 0x%04x\n", qe3_ret);
-									ret = -1;
-					}
-					printf("succeed quote_size: %d\n", quote_size);
-
-					p_quote_buffer = (uint8_t*)malloc(REF_E_SIZE_IN_BYTES+ REF_N_SIZE_IN_BYTES + sizeof(rsaPublicKeyParams) + quote_size);
-					if (NULL == p_quote_buffer) {
-									printf("Couldn't allocate quote_buffer\n");
-									ret = -1;
-					}
-					memset(p_quote_buffer, 0, quote_size);
-
-					rsaPublicKeyParams.ulExponentLen = REF_E_SIZE_IN_BYTES;
-					rsaPublicKeyParams.ulModulusLen = REF_N_SIZE_IN_BYTES;
-					const char* exponent = (const char *)g_rsa_key.e;
-					const char* modulus = (const char *)g_rsa_key.n;
-
-					memcpy(p_quote_buffer, &rsaPublicKeyParams, sizeof(rsaPublicKeyParams));
-					memcpy(p_quote_buffer+sizeof(CK_RSA_PUBLIC_KEY_PARAMS), exponent, REF_N_SIZE_IN_BYTES);
-					memcpy(p_quote_buffer+sizeof(CK_RSA_PUBLIC_KEY_PARAMS) + REF_N_SIZE_IN_BYTES, modulus, REF_E_SIZE_IN_BYTES);
-
-					int offset = sizeof(CK_RSA_PUBLIC_KEY_PARAMS);
-					const uint32_t publicKeyBufferSize = REF_N_SIZE_IN_BYTES+ REF_E_SIZE_IN_BYTES+ sizeof(CK_RSA_PUBLIC_KEY_PARAMS);
-					const uint32_t publicKeyBufferSize1 = REF_N_SIZE_IN_BYTES+ REF_E_SIZE_IN_BYTES ;
-
-					uint8_t msg_hash[64] = {0};
-					status = sgx_sha256_msg(p_quote_buffer+offset, publicKeyBufferSize1, (sgx_sha256_hash_t *)msg_hash);
-					memcpy(reportData.d, msg_hash, sizeof(msg_hash));
-
-					printf("\nStep2: Call create_app_report:");
-					status = enclave_create_report(global_eid,
-													&retval,
-													&qe_target_info,&reportData,
-													&app_report);
-					if ((SGX_SUCCESS != status) || (0 != retval)) {
-									printf("\nCall to get_app_enclave_report() failed\n");
-									ret = false;
-					}
-
-					// Get the Quote
-					printf("\nStep4: Call sgx_qe_get_quote\n");
-					qe3_ret = sgx_qe_get_quote(&app_report,
-													quote_size,
-													p_quote_buffer+publicKeyBufferSize);
-					if (SGX_QL_SUCCESS != qe3_ret) {
-									printf( "Error in sgx_qe_get_quote. 0x%04x\n", qe3_ret);
-									ret = -1;
-					}
-
-					CK_RSA_PUBLIC_KEY_PARAMS* rsaPublicKeyParam_ = (CK_RSA_PUBLIC_KEY_PARAMS*)(p_quote_buffer);
-
-					p_quote = (_sgx_quote3_t*)(p_quote_buffer+publicKeyBufferSize);
-					p_sig_data = (sgx_ql_ecdsa_sig_data_t *)p_quote->signature_data;
-					p_auth_data = (sgx_ql_auth_data_t*)p_sig_data->auth_certification_data;
-					p_cert_data = (sgx_ql_certification_data_t *)((uint8_t *)p_auth_data + sizeof(*p_auth_data) + p_auth_data->size);
+		const char* exponent = (const char *)g_rsa_key1.e;
+		const char* modulus = (const char *)g_rsa_key1.n;
+		key_buffer = (uint8_t*)malloc(REF_N_SIZE_IN_BYTES + REF_E_SIZE_IN_BYTES);
+		memcpy(key_buffer, exponent, REF_E_SIZE_IN_BYTES);
+		memcpy(key_buffer+REF_E_SIZE_IN_BYTES, modulus, REF_N_SIZE_IN_BYTES);
 
 
-					printf("cert_key_type = 0x%x\n", p_cert_data->cert_key_type);
-					printf("cert_key_type = %d\n", p_cert_data->cert_key_type);
+		if (ret != 0) {
+			cout << "error in getting public key" <<endl;
+			ret = -1;
+		}
 
-					uint32_t certSize = p_cert_data->size;
-					uint32_t* cert_information = NULL;
-					cert_information = (uint32_t*)malloc(certSize);
-					if (NULL == cert_information) {
-									printf("Couldn't allocate cert_information buffer\n");
-									ret = -1;
-					}
-					memset(cert_information, 0, certSize);
-					memcpy(cert_information, (unsigned char*)( p_cert_data->certification_data), certSize);
+		qe3_ret = sgx_qe_set_enclave_load_policy(SGX_QL_PERSISTENT);
+		if(SGX_QL_SUCCESS != qe3_ret) {
+			printf("Error in set enclave load policy: 0x%04x\n", qe3_ret);
+			ret = -1;
+		}
+		printf("successful in setting load policy!\n");
+		qe3_ret = sgx_ql_set_path(SGX_QL_PCE_PATH, "/usr/lib64/libsgx_pce.signed.so");
+		if(SGX_QL_SUCCESS != qe3_ret) {
+			printf("Error in set PCE directory: 0x%04x.\n", qe3_ret);
+			ret = -1;
+		}
+		qe3_ret = sgx_ql_set_path(SGX_QL_QE3_PATH, "/usr/lib64/libsgx_qe3.signed.so");
+		if(SGX_QL_SUCCESS != qe3_ret) {
+			printf("Error in set QE3 directory: 0x%04x.\n", qe3_ret);
+			ret = -1;
+		}
+		qe3_ret = sgx_ql_set_path(SGX_QL_QPL_PATH, "/usr/lib64/libdcap_quoteprov.so.1");
+		if(SGX_QL_SUCCESS != qe3_ret) {
+			printf("Info: /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 not found.\n");
+		}
+		printf("\nStep1: Call sgx_qe_get_target_info:");
+		qe3_ret = sgx_qe_get_target_info(&qe_target_info);
+		if (SGX_QL_SUCCESS != qe3_ret) {
+			printf("Error in sgx_qe_get_target_info. 0x%04x\n", qe3_ret);
+			ret = -1;
+		}
+		printf("succeed!");
 
-					// Fetch PCK Certificate from PCK Cert chain. PCK is the 1st certificate in the chain.
-					// Hence we will fetch it by getting the position of the ending of PCK and copying it.
-					std::string pckCert;
-					std::size_t pckPos1, pckPos2;
-					const char* certificate_pattern = "-----BEGIN CERTIFICATE-----";
-					// Whole PCK chain in quote from which PCK cert will be fetched.
-					std::string certificate_str((const char*)(cert_information));
-					pckPos1 = certificate_str.find(certificate_pattern);
-					if(pckPos1 != std::string::npos) {
-									pckPos2 = certificate_str.find(certificate_pattern, pckPos1 + 1);
-									if(pckPos2 != std::string::npos) {
-													pckCert = certificate_str.substr(pckPos1, pckPos2);
-									}
-					} else {
-									printf("pck certificate could not be fetched");
-					}
-					const std::size_t pckCertSize = pckPos2;
+		printf("\nStep3: Call sgx_qe_get_quote_size:");
+		qe3_ret = sgx_qe_get_quote_size(&quote_size);
+		if (SGX_QL_SUCCESS != qe3_ret) {
+			printf("Error in sgx_qe_get_quote_size. 0x%04x\n", qe3_ret);
+			ret = -1;
+		}
+		printf("succeed quote_size: %d\n", quote_size);
 
-					struct keyagent_sgx_quote_info quote_info = {
-									.major_num = major_no,
-									.minor_num = minor_no,
-									.quote_size = quote_size +REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES,
-									.quote_type = 1,
-									.keytype = 1,
-									.keydetails = {
-													.rsa = {
-																	.exponent_len = (u_int32_t)rsaPublicKeyParam_->ulExponentLen,
-																	.modulus_len = (u_int32_t)rsaPublicKeyParam_->ulModulusLen
-													},
-									},
-									.quote_details = {
-													.ecdsa_quote_details = {
-																	.pckCert_size =  (u_int32_t)pckCertSize,
-													},
-									}
-					};
+		p_quote_buffer = (uint8_t*)malloc(quote_size);
+		if (NULL == p_quote_buffer) {
+			printf("Couldn't allocate quote_buffer\n");
+			ret = -1;
+		}
+		memset(p_quote_buffer, 0, quote_size);
 
-					uint8_t* challenge_final = NULL;
-					challenge_final = (uint8_t*)malloc((sizeof(quote_info)+pckCertSize+quote_size+REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES));
+		sgx_status_t value;
 
-					memcpy(challenge_final,(uint8_t*)&quote_info, sizeof(quote_info));
-					memcpy(challenge_final+sizeof(quote_info), (char *)(pckCert.c_str()), pckCertSize);
-					memcpy(challenge_final+sizeof(quote_info)+pckCertSize, p_quote_buffer+sizeof(CK_RSA_PUBLIC_KEY_PARAMS), quote_size+REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES);
-					uint8_t* publicKey = NULL;
-					publicKey = (uint8_t*)malloc(REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES);
-					memcpy(publicKey, challenge_final+sizeof(quote_info)+pckCertSize+sizeof(CK_RSA_PUBLIC_KEY_PARAMS), 388);
+		printf("\nStep2: Call create_app_report:\n");
+		status = enclave_create_report(global_eid,
+				&retval,
+				&qe_target_info,&reportData,
+				&app_report);
 
-					fptr = fopen("quote.dat","wb");
-					if( fptr )
-					{
-									fwrite(challenge_final, sizeof(quote_info)+pckCertSize+quote_size+REF_E_SIZE_IN_BYTES+REF_N_SIZE_IN_BYTES, 1, fptr);
-									fclose(fptr);
-					}
+		if ((SGX_SUCCESS != status) || (0 != retval)) {
+			printf("\nCall to create_app_report() failed\n");
+			ret = false;
+		}
 
-					printf("sgx_qe_cleanup_by_policy is valid in in-proc mode only.\n");
-					printf("\n Clean up the enclave load policy:");
-					qe3_ret = sgx_qe_cleanup_by_policy();
-					if(SGX_QL_SUCCESS != qe3_ret) {
-									printf("Error in cleanup enclave load policy: 0x%04x\n", qe3_ret);
-									ret = -1;
-					}
-					printf("succeed!\n");
-					*x = sizeof(quote_info)+pckCertSize+quote_size+REF_E_SIZE_IN_BYTES+REF_N_SIZE_IN_BYTES;
-					return challenge_final;
+		// Get the Quote
+		printf("\nStep4: Call sgx_qe_get_quote\n");
+		qe3_ret = sgx_qe_get_quote(&app_report,
+				quote_size,
+				p_quote_buffer);
+		if (SGX_QL_SUCCESS != qe3_ret) {
+			printf( "Error in sgx_qe_get_quote. 0x%04x\n", qe3_ret);
+			ret = -1;
+		}
+
+		p_quote = (_sgx_quote3_t*)(p_quote_buffer);
+		p_sig_data = (sgx_ql_ecdsa_sig_data_t *)p_quote->signature_data;
+		p_auth_data = (sgx_ql_auth_data_t*)p_sig_data->auth_certification_data;
+		p_cert_data = (sgx_ql_certification_data_t *)((uint8_t *)p_auth_data + sizeof(*p_auth_data) + p_auth_data->size);
+
+		printf("cert_key_type = 0x%x\n", p_cert_data->cert_key_type);
+		printf("cert_key_type = %d\n", p_cert_data->cert_key_type);
+
+		uint32_t certSize = p_cert_data->size;
+		uint32_t* cert_information = NULL;
+		cert_information = (uint32_t*)malloc(certSize);
+		if (NULL == cert_information) {
+			printf("Couldn't allocate cert_information buffer\n");
+			ret = -1;
+		}
+		memset(cert_information, 0, certSize);
+		memcpy(cert_information, (unsigned char*)( p_cert_data->certification_data), certSize);
+
+		printf("sgx_qe_cleanup_by_policy is valid in in-proc mode only.\n");
+		printf("\n Clean up the enclave load policy:");
+		qe3_ret = sgx_qe_cleanup_by_policy();
+		if(SGX_QL_SUCCESS != qe3_ret) {
+			printf("Error in cleanup enclave load policy: 0x%04x\n", qe3_ret);
+			ret = -1;
+		}
+		printf("succeed!\n");
+		*qSize = quote_size;
+		*kSize = REF_N_SIZE_IN_BYTES + REF_E_SIZE_IN_BYTES;
+
+		uint8_t* challenge_final = NULL;
+		challenge_final = (uint8_t*)malloc((quote_size+REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES));
+
+		memcpy(challenge_final, p_quote_buffer, quote_size);
+		memcpy(challenge_final+quote_size, key_buffer, REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES);
+		fptr = fopen("quote_nonStandAloneMode.dat","wb");
+		if( fptr )
+		{
+			fwrite(challenge_final,quote_size+REF_E_SIZE_IN_BYTES+REF_N_SIZE_IN_BYTES, 1, fptr);
+			fclose(fptr);
+		}
+
+		return challenge_final;
 	}
 }
 
@@ -501,18 +418,18 @@ void unwrap_Secret(){
 /* Application entry */
 int SGX_CDECL init(bool argc)
 {
-    printf("init called\n");
-    mode = argc;
+	printf("init called\n");
+	mode = argc;
 
-    printf("mode is: %d\n", mode);
+	printf("mode is: %d\n", mode);
 
-    /* Following code is for Non StandAlone mode that will be used in 3.3 release.
-     * Initialize the enclave 
-     * */
-    if(initialize_enclave() < 0){
-        return -1; 
-    }
-    cout << "enclave id: " << global_eid <<endl;
+	/* Following code is for Non StandAlone mode that will be used in 3.3 release.
+	 * Initialize the enclave 
+	 * */
+	if(initialize_enclave() < 0){
+		return -1; 
+	}
+	cout << "enclave id: " << global_eid <<endl;
  
     printf("Info: SampleEnclave successfully returned.\n");
 

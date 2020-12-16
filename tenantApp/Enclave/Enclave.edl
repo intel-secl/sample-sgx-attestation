@@ -43,10 +43,11 @@ include "sgx_report.h"
      */
     
     trusted {
-	public sgx_status_t enclave_pubkey ([out]ref_rsa_params_t* pubkey, [out]int *count);
+	public sgx_status_t enclave_pubkey ([out]ref_rsa_params_t* key, [out]int *count);
+
+	public uint32_t enclave_create_report([in]const sgx_target_info_t* p_qe3_target, [in]sgx_report_data_t* reportData, [out]sgx_report_t* p_report);
 
 
-public uint32_t enclave_create_report([in]const sgx_target_info_t* p_qe3_target, [in]const sgx_report_data_t* reportData, [out]sgx_report_t* p_report);
     };
 
     /* 
@@ -57,6 +58,7 @@ public uint32_t enclave_create_report([in]const sgx_target_info_t* p_qe3_target,
     untrusted {
         void ocall_print_string([in, string] const char *str);
         void ocall_print_string1([in, string] const char *str);
+
     };
 
 };
