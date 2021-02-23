@@ -4,11 +4,8 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 
 - Initializing and destroying an enclave
 - Generate Quote Inside enclave
-- Unwrapping secret inside enclave
 - Creating a public private key pair inside the enclave and including in the SGX quote a hash of the public key concatenated with a verifier-provided nonce
-- Verify the SGX quote and the enclave public keys and the nonce match the hash in the quote
-- Generating and sending a Symmetric Wrapping Key (SWK) wrapped with the enclave public key
-- Sending a SWK-wrapped secret to the enclave
+- Verify the SGX quote 
 
 --------------------------------------------------------------------------------
 
@@ -23,22 +20,17 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 - Intel(R) SGX SDK for Linux
 - gcc toolchain
 - make
-- makeself
 
 - Install Intel(R) SGX SDK for Linux* OS.
 
 - Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
 
-- You can also refer to quick start guide for 3.2 release.
+- Running `make all` will build the project.
 
-- <https://github.com/intel-secl/docs/blob/v3.2/develop/quick-start-guides/Quick%20Start%20Guide%20-%20Intel%C2%AE%20Security%20Libraries%20-%20Secure%20Key%20Caching.md>
+Binaries are created in `attestedApp/out` and `attestingApp/out` folder:
 
-- Running `make all` build the complete project:
-
-Two installer binaries are created in `out` folder:
-
-- sgx-app-verifier-v*.bin - binary for the verifier app
-- sgx-tenantapp-service-v*.bin - binary for the tenant app service
+- sgx-attesting-app - binary for the Attesting App
+- sgx-attested-app- binary for the Attested App.
 
 --------------------------------------------------------------------------------
 
@@ -67,22 +59,19 @@ The different between HeapMinSize and HeapMaxSize is the heap memory. This is ad
 
 --------------------------------------------------------------------------------
 
-Sample configuration
+Sample configuration (config.yml)
 
 --------------------------------------------------------------------------------
 
 Name               | Type    | Description                                                                                                                                                                                                                                                     | Required Default Value
 ------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------
-STANDALONE_MODE    | boolean | Sets the operating mode for the verifier service - if set to true will simulate the tenant quote verification quote. The non-standalone mode will be supported in future releases and will pass the quote to an external SGX Quote Verification Service (SQVS). | No                     | true
-TENANTSERVICE_HOST | string  | Host on which the tenant app service is deployed                                                                                                                                                                                                                | No                     | 127.0.0.1
-TENANTSERVICE_PORT | int     | Listener Port for the tenant app service                                                                                                                                                                                                                        | No                     | 9999
-LOG_LEVEL          | string  | Adjust the filter for events info/debug/trace/error                                                                                                                                                                                                             | no                     | info
-LOG_MAX_LENGTH     | int     | Maximum length of log entry                                                                                                                                                                                                                                     | No                     | 1500
-LOG_ENABLE_STDOUT  | boolean | Logs entries will be printed on stdout                                                                                                                                                                                                                          | No                     |
+tenantservice-host | string  | Host on which the tenant app service is deployed                                                                                                                                                                                                                | No                     | 127.0.0.1
+tenantservice-port | int     | Listener Port for the tenant app service                                                                                                                                                                                                                        | No                     | 9999
+sqvs_url | int     | Listener Port for the tenant app service                                                                                                                                                                                                                        | No                     | 9999
 
 --------------------------------------------------------------------------------
 
-## 3\. Deploying the Sample Code
+## 3\. Running the Sample Code
 
 --------------------------------------------------------------------------------
 
@@ -90,73 +79,64 @@ LOG_ENABLE_STDOUT  | boolean | Logs entries will be printed on stdout           
 
 - Install Intel(R) SGX SDK for Linux* OS
 - Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
-- You can also refer to quick start guide for 3.2 release. <https://github.com/intel-secl/docs/blob/v3.2/develop/quick-start-guides/Quick%20Start%20Guide%20-%20Intel%C2%AE%20Security%20Libraries%20-%20Secure%20Key%20Caching.md>
-
-### SGX Verifier App
-
-1. Place the updated **sgx-tenantapp-service.env** in /root
-2. Run the installer binary:
-
-  ```bash
-  ./sgx-tenantapp-service-v*.bin
-  ```
-
-### SGX Tenant App Service
-
-1. Place the updated **sgx-app-verifier.env** in /root
-2. Run the installer binary:
-
-  ```bash
-  ./sgx-app-verifier-v*.bin
-  ```
-
---------------------------------------------------------------------------------
-
-## 4\. Running the Sample App Workflow
-
---------------------------------------------------------------------------------
+- Update /etc/sgx_default_qcnl.conf with SCS IP and port.
+- Set SQVS_INCLUDE_TOKEN=false in SQVS config.yaml and restart SQVS.
+- Download CA Certificate from CMS
 
 ```bash
-# Ensure the tenant app service is running
-sgx-tenantapp-service start
+ cd <source root folder>
+ curl --insecure --location --request GET 'https://<cms.server:port>/cms/v1/ca-certificates' --header 'Accept: application/x-pem-file' > rootca.pem
 ```
 
-1. This does the following:
-2. Starts the Tenant App Service
+#### Updating attesting App's policy file
+
+- Run the sgx_sign utility to get information on MR Enclave and MR Signer needed by the offline policy file.
+
+```bash
+cd <source root folder>
+sgx_sign dump -enclave ./attestedApp/lib/enclave.signed.so -dumpfile info.txt
+```
+- In info.txt. search for "mrsigner->value" and add this to "MRSigner:" in the build/linux/sgx-quote-policy.txt.
+- In info.txt, search for "metadata->enclave_css.body.enclave_hash.m:" and add this to "MREnclave:" in the build/linix/sgx-quote-policy.txt
+
+### SGX Attested
+
+1. Update ./attestedApp/out/config.yml 
+2. Run the Attested App binary:
+
+  ```bash
+  ./sgx-attested-app run
+  ```
+
 3. Initializes the enclave inside the Tenant App
 4. Starts the TCP listener on the configured port
 
-```bash
-# Get usage information
-sgx-tenantapp-service --help
-```
+### SGX Attesting App
 
-```bash
-# Get usage information
-sgx-app-verifier --help
-```
+1. Update ./attestingApp/out/config.yml 
+2. Run the Attesting App binary:
 
-```bash
-# Kick off the quote verification workflow
-sgx-app-verifier run
-```
+  ```bash
+  ./sgx-attesting-app run
+  ```
+
 
 These are the components involved:
 
 Component             | Short Name         | Implmented In | Requires SGX for deploy | Requires SGX for build
 --------------------- | ------------------ | ------------- | ----------------------- | ----------------------
-sgx-app-verifier      | verifier           | Go            | No                      | No
-sgx-tenantapp-service | Tenant App Service | Go            | Yes                     | Yes
-SGX tenant app        | SGX workload app   | C             | Yes                     | Yes                    |
+sgx-attesting-app      | verifier           | Go            | No                      | No
+sgx-attested-app | Tenant App Service | Go            | Yes                     | Yes
+attestedApp/        | SGX workload       | C             | Yes                     | Yes                    |
 
-### Standalone Quote Verification Workflow:
+### Quote Verification Workflow:
 
-1. The verifier will transmit a CONNECT message to the tenant app service over a TCP socket.
-2. The tenant app service, parses the CONNECT request and fetches the quote from the SGX workload running inside the SGX enclave. "The extended quote" is sent back in the response - containing the quote and the enclave's public key.
-3. The verifier parses the response, extracts the quote and runs it through the stubbed quote parser and compares a subset of the fields extracted from the quote against those in a hardcoded quote policy file.
-4. Once done, the enclave's public key is extracted out of the extended quote, and a symmetric secret wrapping key (SWK) is generated and wrapped using the enclave public key. For StandAlone mode this process is stubbed.
-5. This wrapped SWK is sent to the tenant app service, which passes this on to the SGX enclave app. For StandAlone mode this process is stubbed. Only the API call is made. In future release, SWK unwrapping will happen in the API call.
-6. The enclave app then extracts the SWK out of the payload and responds if it is able to do so. This response is transmitted back to the verifier app. Since the previous step is stubbed, for standalone mode app don't unwrap the SWK.
-7. The verifier app then sends the secret payload wrapped using the SWK to the tenant app service. For StandAlone mode this process is stubbed. Only the API call is made.
-8. The tenant app service passes it on to SGX workload inside the enclave. If the secret is unwrapped using the SWK inside the enclave, then the success response is sent back to the verifier app. Since the previous step is stubbed, for standalone mode app don't unwrap the secret.
-9. Verifier repeats the entire workflow in the event of a failure at any step and exits when all the steps from 1-8 have completed successfully.
+1. The attestingApp will transmit a CONNECT message to the attestedApp service over a TCP socket.
+2. The attestedApp service, parses the CONNECT request and fetches the quote from the SGX workload running inside the SGX enclave. "The extended quote" is sent back in the response - containing the quote and the enclave's public key.
+3. The attestingApp parses the response, extracts the quote and verifies it with SQVS and compares a subset of the fields extracted from the quote against those in a hardcoded quote policy file.
+4. The enclave's public key is extracted out of the extended quote, and a symmetric secret wrapping key (SWK) is generated and wrapped using the enclave public key. 
+5. This wrapped SWK is sent to the attestedApp, which inturn passes it to the SGX enclave app. 
+6. The enclave then extracts the SWK out of the payload and responds if it is able to do so. This response is transmitted back to the attestingApp. 
+7. The attestingApp then sends the secret payload wrapped using the SWK to the attestedApp service.
+8. The attestedApp service passes it on to SGX workload inside the enclave. If the secret is unwrapped using the SWK inside the enclave, then the success response is sent back to the attestingApp. 
+   

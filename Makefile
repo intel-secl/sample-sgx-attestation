@@ -6,41 +6,33 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 
 default: all
 
-tenantapp:
-	cd tenantApp/ && $(MAKE) all
+attestedapplib:
+	cd attestedApp/lib/ && $(MAKE) all
 
-verifier:
-	cd pkg/tenantverifier && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantverifier/version.GitHash=$(GITCOMMIT)" -o out/sgx-app-verifier
+rootcacert:
+	mkdir -p attestingApp/out/
+	cp *.pem attestingApp/out/
 
-verifier-installer: verifier
-	mkdir -p installer out/
-	cp pkg/tenantverifier/out/sgx-app-verifier installer/
-	cp pkg/tenantverifier/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
-	cp pkg/tenantverifier/build/linux/sgx-quote-policy.txt installer/sgx-quote-policy.txt
-	makeself installer out/sgx-app-verifier-$(VERSION).bin "sgx-app-verifier $(VERSION)" ./install.sh
-	rm -rf installer
+attestingapp: rootcacert
+	cd attestingApp && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/version.GitHash=$(GITCOMMIT)" -o out/sgx-attesting-app
+	cp attestingApp/build/linux/sgx-quote-policy.txt attestingApp/out/
+	cp attestingApp/build/linux/sgx-app-verifier.env attestingApp/out/
+	cp attestingApp/config.yml.tmpl attestingApp/out/config.yml
+attestedapp: attestedapplib
+	cd attestedApp && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/attestedApp/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/attestedApp/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/attestedApp/version.GitHash=$(GITCOMMIT)" -o out/sgx-attested-app
 
-tenantappservice: tenantapp
-	cd pkg/tenantappservice && GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.Version=$(VERSION) -X github.com/intel-secl/sample-sgx-attestation/v3/pkg/tenantappservice/version.GitHash=$(GITCOMMIT)" -o out/sgx-tenantapp-service
-
-tenantappservice-installer: tenantappservice
-	mkdir -p installer out/
-	cp pkg/tenantappservice/out/sgx-tenantapp-service installer/
-	cp pkg/tenantappservice/build/linux/install.sh installer/install.sh && chmod +x installer/install.sh
-	cp pkg/tenantappservice/build/linux/sgx-tenantapp-service.service installer/sgx-tenantapp-service.service
-	cp tenantApp/app.so installer/app.so
-	cp tenantApp/enclave.signed.so installer/enclave.signed.so
-	makeself installer out/sgx-tenantapp-service-$(VERSION).bin "sgx-tenantapp-service $(VERSION)" ./install.sh
-	rm -rf installer
+attestedapp-installer: attestedapp
+	cp attestedApp/lib/untrusted.so attestedApp/out/untrusted.so
+	cp attestedApp/lib/enclave.signed.so attestedApp/out/enclave.signed.so
 
 test:
 	GOPRIVATE=gitlab.devtools.intel.com/* go test ./... -coverprofile cover.out
 	go tool cover -func cover.out
 	go tool cover -html=cover.out -o cover.html
 
-all: clean tenantapp verifier-installer tenantappservice-installer
+all: clean  attestingapp attestedapp attestedapplib attestedapp-installer
 
 clean:
-	make -C tenantApp clean
-	rm -rf go.sum out/ installer/ pkg/tenantappservice/out pkg/tenantverifier/out cover.*
+	make -C attestedApp/lib/ clean
+	rm -rf go.sum out/ attestedApp/out attestingApp/out cover.*
 
