@@ -33,6 +33,34 @@ for Linux* OS - Installation guide](https://download.01.org/intel-sgx/latest/lin
  curl --insecure --location --request GET 'https://<cms.server:port>/cms/v1/ca-certificates' --header 'Accept: application/x-pem-file' > rootca.pem
 ```
 
+- Create a configuration file at /etc/sgx-tenantapp-service/config.yml and add the following fields 
+```yaml
+tenantservice-host: 127.0.0.1
+tenantservice-port: 9999
+log:
+  max-length: 1500
+  enable-stdout: true
+  level: info
+```
+
+- Update the configuration file at {source folder}/attestingApp/config.yml.tmpl
+
+```yaml
+tenantservice-host: 127.0.0.1
+tenantservice-port: 9999
+sqvs-url: https://<sqvs>:<port>/svs/v1
+server:
+  read-timeout: 30s
+  read-header-timeout: 10s
+  write-timeout: 30s
+  idle-timeout: 10s
+  max-header-bytes: 1048576
+log:
+  max-length: 1500
+  enable-stdout: true
+  level: info
+```
+
 - Run `make all` to build the project.
 
 Binaries are created in `attestedApp/out` and `attestingApp/out` folder:
@@ -111,35 +139,6 @@ sgx_sign dump -enclave ./attestedApp/lib/enclave.signed.so -dumpfile info.txt
 MREnclave:c80de12554feb664496c59f708954aca1572a8cf60f2184f99857081b6314bb8
 MRSigner:83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e
 CPU_SVN:00
-```
-
-#### Updating configuration files
-
-- Create a configuration file at /etc/sgx-tenantapp-service/config.yml and add the following fields 
-```yaml
-tenantservice-host: 127.0.0.1
-tenantservice-port: 9999
-log:
-  max-length: 1500
-  enable-stdout: true
-  level: info
-```
-- Create a configuration file at {source folder}/attestingApp/config.yml.tmpl
-
-```yaml
-tenantservice-host: 127.0.0.1
-tenantservice-port: 9999
-sqvs-url: https://<sqvs>:<port>/svs/v1
-server:
-  read-timeout: 30s
-  read-header-timeout: 10s
-  write-timeout: 30s
-  idle-timeout: 10s
-  max-header-bytes: 1048576
-log:
-  max-length: 1500
-  enable-stdout: true
-  level: info
 ```
 
 ### SGX Attested App
