@@ -4,8 +4,8 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 
 - Initializing and destroying an enclave
 - Generate Quote Inside enclave
-- Creating a public private key pair inside the enclave and including in the SGX quote a hash of the public key concatenated with a verifier-provided nonce
-- Verify the SGX quote 
+- Creating a public/private key pair inside the enclave and including the hash of public key in the SGX quote
+- Verify the SGX quote using SGX Quote Verification Service (SQVS)
 
 --------------------------------------------------------------------------------
 
@@ -15,22 +15,30 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 
 ### Pre-requisites
 
-- RHEL 8.0
+- RHEL 8.2
 - GoLang v1.13 or greater
 - Intel(R) SGX SDK for Linux
 - gcc toolchain
 - make
 
-- Install Intel(R) SGX SDK for Linux* OS.
+- Running instance of CMS, SCS and SQVS.
+- Install SGX Agent on the host.
+- Install Intel(R) SGX SDK for Linux* OS . Refer [Intel® Software Guard Extensions (Intel® SGX) SDK
+for Linux* OS - Installation guide](https://download.01.org/intel-sgx/latest/linux-latest/docs/)
 
-- Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
+- Download CA Certificate from CMS
 
-- Running `make all` will build the project.
+```bash
+ cd <source folder>
+ curl --insecure --location --request GET 'https://<cms.server:port>/cms/v1/ca-certificates' --header 'Accept: application/x-pem-file' > rootca.pem
+```
+
+- Run `make all` to build the project.
 
 Binaries are created in `attestedApp/out` and `attestingApp/out` folder:
 
 - sgx-attesting-app - binary for the Attesting App
-- sgx-attested-app- binary for the Attested App.
+- sgx-attested-app - binary for the Attested App.
 
 --------------------------------------------------------------------------------
 
@@ -77,46 +85,81 @@ sqvs_url | int     | Listener Port for the tenant app service                   
 
 ### Pre-requisites
 
-- Install Intel(R) SGX SDK for Linux* OS
 - Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
 - Update /etc/sgx_default_qcnl.conf with SCS IP and port.
 - Set SQVS_INCLUDE_TOKEN=false in SQVS config.yaml and restart SQVS.
-- Download CA Certificate from CMS
-
-```bash
- cd <source root folder>
- curl --insecure --location --request GET 'https://<cms.server:port>/cms/v1/ca-certificates' --header 'Accept: application/x-pem-file' > rootca.pem
-```
 
 #### Updating attesting App's policy file
 
+- Create a policy file yaml file at /etc/sgx-app-verifier/sgx-quote-policy.txt using the template from <source folder>/attestingApp/build/linux/sgx-quote-policy.txt with the following fields
+```yaml
+MREnclave:
+MRSigner:
+CPU_SVN:
+```
 - Run the sgx_sign utility to get information on MR Enclave and MR Signer needed by the offline policy file.
 
 ```bash
-cd <source root folder>
+cd <source folder>
 sgx_sign dump -enclave ./attestedApp/lib/enclave.signed.so -dumpfile info.txt
 ```
-- In info.txt. search for "mrsigner->value" and add this to "MRSigner:" in the build/linux/sgx-quote-policy.txt.
-- In info.txt, search for "metadata->enclave_css.body.enclave_hash.m:" and add this to "MREnclave:" in the build/linix/sgx-quote-policy.txt
+- In info.txt, search for "mrsigner->value" and add this to "MRSigner:" in /etc/sgx-app-verifier/sgx-quote-policy.txt.
+- In info.txt, search for "metadata->enclave_css.body.enclave_hash.m:" and add this to "MREnclave:" in /etc/sgx-app-verifier/sgx-quote-policy.txt
+- In info.txt , mrsigner->value: "0x83 0xd7 0x19 0xe7 0x7d 0xea 0xca 0x14 0x70 0xf6 0xba 0xf6 0x2a 0x4d 0x77 0x43 0x03 0xc8 0x99 0xdb 0x69 0x02 0x0f 0x9c 0x70 0xee 0x1d 0xfc 0x08 0xc7 0xce 0x9e" needs to be added as "MRSigner:83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e" in sgx-quote-policy.txt . Same applies for MREnclave.
+- E.g /etc/sgx-app-verifier/sgx-quote-policy.txt : 
+```yaml
+MREnclave:c80de12554feb664496c59f708954aca1572a8cf60f2184f99857081b6314bb8
+MRSigner:83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e
+CPU_SVN:00
+```
 
-### SGX Attested
+#### Updating configuration files
 
-1. Update ./attestedApp/out/config.yml 
-2. Run the Attested App binary:
+- Create a configuration file at /etc/sgx-tenantapp-service/config.yml and add the following fields 
+```yaml
+tenantservice-host: 127.0.0.1
+tenantservice-port: 9999
+log:
+  max-length: 1500
+  enable-stdout: true
+  level: info
+```
+- Create a configuration file at {source folder}/attestingApp/config.yml.tmpl
+
+```yaml
+tenantservice-host: 127.0.0.1
+tenantservice-port: 9999
+sqvs-url: https://<sqvs>:<port>/svs/v1
+server:
+  read-timeout: 30s
+  read-header-timeout: 10s
+  write-timeout: 30s
+  idle-timeout: 10s
+  max-header-bytes: 1048576
+log:
+  max-length: 1500
+  enable-stdout: true
+  level: info
+```
+
+### SGX Attested App
+- Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
+- Run the Attested App binary first in a new terminal:
 
   ```bash
+  cd <source folder>/attestedApp/out/
   ./sgx-attested-app run
   ```
 
-3. Initializes the enclave inside the Tenant App
-4. Starts the TCP listener on the configured port
+- This initializes the enclave inside the Tenant App
+- And starts the TCP listener on the configured port
 
 ### SGX Attesting App
-
-1. Update ./attestingApp/out/config.yml 
-2. Run the Attesting App binary:
+- Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
+- Run the Attesting App binary in a new terminal:
 
   ```bash
+   cd <source folder>/attestingApp/out/
   ./sgx-attesting-app run
   ```
 
