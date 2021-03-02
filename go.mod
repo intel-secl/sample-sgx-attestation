@@ -5,11 +5,9 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/viper v1.7.0
-	github.com/stretchr/testify v1.6.1
 	gopkg.in/yaml.v2 v2.3.0
-	intel/isecl/lib/common/v3 v3.3.1
+	intel/isecl/lib/common/v3 v3.5.0
 )
 
+replace intel/isecl/lib/common/v3 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v3 v3.5/develop
 
-replace intel/isecl/lib/common/v3 => github.com/intel-secl/common/v3 v3.3.1
-replace intel/isecl/lib/clients/v3 => github.com/intel-secl/clients/v3 v3.3.1
