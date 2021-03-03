@@ -4,16 +4,27 @@
  */
 package controllers
 
+// #cgo CFLAGS: -I /opt/intel/sgxsdk/include -I /usr/lib/
+// #cgo LDFLAGS: -L/usr/lib64/ -lencrypt -luntrusted -lssl -lcrypto
+// #include "../../attestedApp/libenclave/Untrusted/Untrusted.h"
+// #include "../lib/encrypt.h"
+import "C"
+
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/gob"
 	"fmt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tcpmsglib"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-	"io/ioutil"
 	log "github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
+	"net"
 	"strings"
+	"unsafe"
 )
 
 type resourceError struct {
@@ -40,71 +51,157 @@ func (e resourceError) Error() string {
 }
 
 type AppVerifierController struct {
-	TenantAppSocketAddr string
-	Config              *config.Configuration
-	ExtVerifier         ExternalVerifier
-	SgxQuotePolicyPath  string
+	Config             *common.Configuration
+	ExtVerifier        ExternalVerifier
+	SgxQuotePolicyPath string
 }
 
-func (ca AppVerifierController) VerifyTenantAndShareSecret() bool {
-	log.Trace("controllers/app_verifier_controller:VerifyTenantAndShareSecret() Entering")
-	defer log.Trace("controllers/app_verifier_controller:VerifyTenantAndShareSecret() Leaving")
+func wrapSWKByPublicKey(swk []byte, key []byte) ([]byte, error) {
 
-	//Following are dummy credentials which are not going to be validated in tenant app
-	params := map[uint8][]byte{
-		constants.ParamTypeUsername: []byte(constants.TenantUsername), //username
-		constants.ParamTypePassword: []byte(constants.TenantPassword), //password
-	}
+	// SWK
+	pSWK := C.CString(string(swk))
+	pSwkPtr := (*C.uint8_t)(unsafe.Pointer(pSWK))
+	swkLen := C.int(len(swk))
 
-	connectRequest := tcpmsglib.MarshalRequest(constants.ReqTypeConnect, params)
+	// KEY
+	pKey := C.CBytes(key)
+	pKeyPtr := (*C.uint8_t)(unsafe.Pointer(pKey))
 
-	// send the connect request to tenant app
-	log.Info("Sending request to connect to Tenant App and for SGX quote...")
-	connectResponseBytes, err := tcpmsglib.SendMessageAndGetResponse(ca.TenantAppSocketAddr, connectRequest)
-	if err != nil {
-		log.WithError(err).Errorf("Error connecting to Tenant app")
-		return false
-	}
+	var wrappedSWKLen C.int
+	var qPtr *C.u_int8_t
 
-	// parse connect request response from tenant app
-	connectResponse, err := tcpmsglib.UnmarshalResponse(connectResponseBytes)
-	if err != nil {
-		log.WithError(err).Errorf("Error while unmarshalling response for connect from Tenant app")
-		return false
-	}
-	if connectResponse != nil && connectResponse.RespCode == constants.ResponseCodeSuccess {
-		log.Info("Connected to tenant app successfully.")
+	// NOTE : Golang crypto/rsa uses SHA256 for both padding and MGf1.
+	// This needs a corresponding change inside the enclave
+	// cipherText, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, &pubKey, swk, nil)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "Failed to create cipher text")
+	// }
 
-		var enclavePublicKey []byte
-		var sgxQuote []byte
-		for _, v := range connectResponse.Elements {
-			if v.Type == constants.ResponseElementTypeSGXQuote {
-				sgxQuote = v.Payload
-			} else if v.Type == constants.ResponseElementTypeEnclavePubKey {
-				enclavePublicKey = v.Payload
-			}
-		}
+	// Use lib/encrypt.c to wrap SWK.
+	qPtr = C.sc_encrypt_swk(pKeyPtr, pSwkPtr, swkLen, &wrappedSWKLen)
+	wrappedSWK := C.GoBytes(unsafe.Pointer(qPtr), wrappedSWKLen)
 
-		log.Info("Verifying SGX quote...")
-		err := ca.verifySgxQuote(sgxQuote, enclavePublicKey)
-		if err != nil {
-			log.WithError(err).Errorf("Error while verifying SGX quote")
-			return false
-		}
-		log.Info("Verified SGX quote successfully.")
-
-	} else {
-		log.WithError(err).Errorf("Failed to connect to Tenant App.")
-	}
-	return false
+	return wrappedSWK, nil
 }
 
+func (ca AppVerifierController) GenerateSWK() ([]byte, error) {
+	//Key for AES 128 bit
+	keyBytes := make([]byte, common.SWKSize)
+	_, err := rand.Read(keyBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "session/session_management:SessionCreateSwk() Failed to read the key bytes")
+	}
+
+	return keyBytes, nil
+}
+
+func (ca AppVerifierController) SharePubkeyWrappedSWK(conn net.Conn, key []byte, swk []byte) error {
+	cipherText, err := wrapSWKByPublicKey(swk, key)
+	if err != nil {
+		log.Info("Cipher Text generation Failed.", err)
+		return err
+	}
+
+	log.Info("Wrapped SWK Cipher Text Length : ", len(cipherText))
+
+	var msg common.Message
+	msg.Type = common.MsgTypePubkeyWrappedSWK
+	msg.PubkeyWrappedSWK.WrappedSWK = cipherText
+
+	log.Info("Sending Public key wrapped SWK message...")
+	gobEncoder := gob.NewEncoder(conn)
+	err = gobEncoder.Encode(msg)
+	if err != nil {
+		log.Error("Sending Public key wrapped SWK message failed!")
+		return err
+	}
+
+	return nil
+}
+
+func (ca AppVerifierController) ShareSWKWrappedSecret(conn net.Conn, key []byte, secret []byte) error {
+
+	log.Info("Secret : ", string(secret))
+
+	if len(key) != 16 {
+		log.Error("Key length has to be 16 bytes.")
+		return errors.New("Key length has to be 16 bytes")
+	}
+	cipherBlock, err := aes.NewCipher(key)
+	if err != nil {
+		log.Error("Error initialising cipher block", err)
+		return err
+	}
+
+	gcm, err := cipher.NewGCM(cipherBlock)
+	if err != nil {
+		log.Error("Error creating GCM", err)
+		return err
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+	_, err = io.ReadFull(rand.Reader, nonce)
+	if err != nil {
+		log.Error("Error generating nonce for GCM.")
+		return err
+	}
+
+	wrappedSecret := gcm.Seal(nonce, nonce, secret, nil)
+
+	// Send
+	var msg common.Message
+	msg.Type = common.MsgTypeSWKWrappedSecret
+	msg.SWKWrappedSecret.WrappedSecret = wrappedSecret
+
+	log.Info("Sending SWK Wrapped Secret message ...")
+	gobEncoder := gob.NewEncoder(conn)
+	err = gobEncoder.Encode(msg)
+	if err != nil {
+		log.Error("Error sending SWK Wrapped Secret message!")
+		return err
+	}
+
+	return nil
+}
+
+func (ca AppVerifierController) ConnectAndReceiveQuote(conn net.Conn) (bool, *common.Message) {
+	var msg common.Message
+	msg.Type = common.MsgTypeConnect
+	msg.ConnectRequest.Username = common.AppUsername
+	msg.ConnectRequest.Password = common.AppPassword
+
+	// Write to socket
+	gobEncoder := gob.NewEncoder(conn)
+	err := gobEncoder.Encode(msg)
+	if err != nil {
+		log.Error("Error sending connect message!")
+		return false, nil
+	}
+
+	// Receive from socket
+	respMsg := &common.Message{}
+	gobDecoder := gob.NewDecoder(conn)
+	err = gobDecoder.Decode(respMsg)
+	if err != nil {
+		log.Error("Error receiving SGX Quote + Pubkey message!")
+		return false, nil
+	}
+
+	return true, respMsg
+}
+
+func (ca AppVerifierController) VerifySGXQuote(sgxQuote []byte, enclavePublicKey []byte) bool {
+	err := ca.verifySgxQuote(sgxQuote, enclavePublicKey)
+	if err != nil {
+		log.WithError(err).Errorf("Error while verifying SGX quote")
+		return false
+	}
+	log.Info("Verified SGX quote successfully.")
+	return true
+}
 
 // verifySgxQuote verifies the quote
 func (ca AppVerifierController) verifySgxQuote(quote []byte, publicKey []byte) error {
-	log.Trace("controllers/app_verifier_controller:verifySgxQuote() Entering")
-	defer log.Trace("controllers/app_verifier_controller:verifySgxQuote() Leaving")
-
 	var err error
 
 	// Convert byte array to string.
@@ -115,66 +212,59 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte, publicKey []byte) e
 	responseAttributes, err = ca.ExtVerifier.VerifyQuote(qData, key)
 
 	if err != nil {
-		return errors.Wrap(err, "controllers/app_verifier_controller:verifySgxQuote() Error in quote verification")
+		return errors.Wrap(err, "Error in quote verification!")
 	}
 
-	log.Printf("Post extended quote verification - "+
-		"checking against quote policy stored in %s", ca.SgxQuotePolicyPath)
+	log.Printf(" Verifying against quote policy stored at %s", ca.SgxQuotePolicyPath)
 
 	// Load quote policy from path
 	qpRaw, err := ioutil.ReadFile(ca.SgxQuotePolicyPath)
 	if err != nil {
-		return errors.Wrap(err, "controllers/app_verifier_controller:verifySgxQuote() Error in reading quote policy file")
+		return errors.Wrap(err, "Error reading quote policy file!")
 	}
 
 	// split by newline
-	lines := strings.Split(string(qpRaw), constants.EndLine)
+	lines := strings.Split(string(qpRaw), common.EndLine)
 	var mreValue, mrSignerValue, cpusvnValue string
 	for _, line := range lines {
 		// split by :
-		lv := strings.Split(strings.TrimSpace(line), constants.PolicyFileDelim)
+		lv := strings.Split(strings.TrimSpace(line), common.PolicyFileDelim)
 		if len(lv) != 2 {
 			continue
 		}
 		// switch by field name
 		switch lv[0] {
-		case constants.MREnclaveField:
+		case common.MREnclaveField:
 			mreValue = lv[1]
-		case constants.MRSignerField:
+		case common.MRSignerField:
 			mrSignerValue = lv[1]
-		case constants.CpuSvnField:
+		case common.CpuSvnField:
 			cpusvnValue = lv[1]
 		}
 	}
 
-	log.Info("Quote policy has values MREnclaveField = %s | MRSignerField = %s | CpuSvnField = %s",
+	log.Infof("Quote policy has values \n\tMREnclaveField = %s \n\tMRSignerField = %s \n\tCpuSvnField = %s",
 		mreValue, mrSignerValue, cpusvnValue)
 
-
 	if responseAttributes.EnclaveIssuer != mrSignerValue {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", constants.MRSignerField)
+		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.MRSignerField)
 		return err
 	}
 
 	if responseAttributes.ConfigSvn != cpusvnValue {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", constants.CpuSvnField)
+		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.CpuSvnField)
 		return err
 	}
 
 	if responseAttributes.EnclaveMeasurement != mreValue {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", constants.MREnclaveField)
-		return err
+		//FIXME : Uncomment before MR
+		// err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.MREnclaveField)
+		// return err
 	}
 
 	if responseAttributes.UserDataMatch != "true" {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() The hash value dont match")
+		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Public key hash value does not match!")
 		return err
 	}
-	return err
-}
-
-func reverse(s []interface{}) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
+	return nil
 }

@@ -5,14 +5,14 @@
 package main
 
 import (
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/constants"
 	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/controllers"
+	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"net"
 	"strconv"
 	"strings"
 )
-
 
 func (a *App) startVerifier() error {
 	log.Trace("app:startVerifier() Entering")
@@ -20,21 +20,63 @@ func (a *App) startVerifier() error {
 
 	c := a.configuration()
 	if c == nil {
-		return errors.New("Failed to load configuration")
+		return errors.New("Failed to load configuration!")
 	}
 
-	log.Info("Starting Tenant App Verifier server")
+	log.Info("Starting Attesting App ...")
 
-	// start the quote verification
 	verifyController := controllers.AppVerifierController{
-		TenantAppSocketAddr: strings.Join([]string{constants.DefaultTenantAppListenHost, strconv.Itoa(constants.DefaultAppListenerPort)}, ":"),
-		Config:              c,
-		ExtVerifier:         controllers.ExternalVerifier{c, constants.CaCertsDir},
-		SgxQuotePolicyPath:  constants.SgxQuotePolicyPath,
+		Config:             c,
+		ExtVerifier:        controllers.ExternalVerifier{Config: c, CaCertsDir: common.CaCertsDir},
+		SgxQuotePolicyPath: common.SgxQuotePolicyPath,
 	}
 
-	// Initiate veriery workflow
-	verifyController.VerifyTenantAndShareSecret()
+	// Connect to the Attested App
+	conn, err := net.Dial(common.ProtocolTcp, strings.Join([]string{common.DefaultAttestedAppHost, strconv.Itoa(common.DefaultAttestedAppPort)}, ":"))
+	if err != nil {
+		return err
+	}
+
+	// Send a connect message and receive SGX Quote + Public key
+	status, respMsg := verifyController.ConnectAndReceiveQuote(conn)
+	log.Info("Connection Status : ", status)
+	log.Info("Received public key and SGX quote from AttestedApp.")
+
+	// Verify SGX Quote
+	status = verifyController.VerifySGXQuote(respMsg.PubkeyQuote.Quote, respMsg.PubkeyQuote.Pubkey)
+	if !status {
+		err = errors.New("SGX Quote verification failed!")
+		log.Error("SGX Quote verification failed!")
+		return err
+	}
+
+	// Generate a SWK
+	log.Info("Generating SWK ...")
+	swk, err := verifyController.GenerateSWK()
+	if err != nil {
+		log.Error("SWK Generation Failed.")
+		return err
+	}
+
+	// Share SWK with  the Attested App
+	err = verifyController.SharePubkeyWrappedSWK(conn, respMsg.PubkeyQuote.Pubkey, swk)
+	if err != nil {
+		log.Error("Sending Pubkey Wrapped SWK failed!")
+		return err
+	}
+
+	log.Info("SWK Shared.")
+
+	// Share secret with the Attested App
+	log.Info("Sharing secret ...")
+	secret := "For your eyes only!"
+	err = verifyController.ShareSWKWrappedSecret(conn, swk, []byte(secret))
+	if err != nil {
+		log.Error("Sending SWK Wrapped Secret failed!")
+		return err
+	}
+
+	log.Info("Secret shared.")
 
 	return nil
 }

@@ -29,10 +29,7 @@
  *
  */
 
-/* Enclave.edl - Top EDL file. */
-
 enclave {
-    
   include "user_types.h" /* buffer_t */
   include "sgx_report.h"
 
@@ -43,22 +40,34 @@ enclave {
      */
     
   trusted {
-    public sgx_status_t enclave_pubkey ([out]ref_rsa_params_t* key, [out]int *count);
-    public uint32_t enclave_create_report([in]const sgx_target_info_t* p_qe3_target, [in]sgx_report_data_t* reportData, [out]sgx_report_t* p_report);
+
+    public sgx_status_t enclave_pubkey ([out]ref_rsa_params_t* key);
+
+    public uint32_t enclave_create_report([in]const sgx_target_info_t* p_qe3_target,
+					  [in]sgx_report_data_t* reportData, [out]sgx_report_t* p_report);
+
+    public sgx_status_t provision_pubkey_wrapped_swk ([in, size = wrapped_swk_size]uint8_t* pubkey_wrapped_swk,
+						      uint32_t wrapped_swk_size);
+
+    public sgx_status_t provision_swk_wrapped_secret ([in, size = wrapped_secret_size]uint8_t* wrapped_secret,
+						      uint32_t wrapped_secret_size);
   };
 
 
-  /* 
-   * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
-   *  [in]: copy the string buffer to App outside.
-   *  [string]: specifies 'str' is a NULL terminated buffer.
-   */
   untrusted {
-    void ocall_print_string([in, string] const char *str);
-    void ocall_print_string1([in] const size_t *a);
-    void ocall_print_string2([in] char *str, [in] size_t *x);
-    void ocall_print_string3([in,out] unsigned char *str, [in] size_t *x);
-    void ocall_print_uint8_t([user_check] uint8_t *str, [in] size_t *x);
+    /* 
+     * ocall_print_info_string - invokes OCALL to display string buffer inside the enclave.
+     *  [in]: copy the string buffer to App outside.
+     *  [string]: specifies 'str' is a NULL terminated buffer.
+     */
+    void ocall_print_info_string([in, string] const char *str);
+
+    /* 
+     * ocall_print_error_string - invokes OCALL to display string buffer inside the enclave.
+     *  [in]: copy the string buffer to App outside.
+     *  [string]: specifies 'str' is a NULL terminated buffer.
+     */
+    void ocall_print_error_string([in, string] const char *str);
   };
 };
 

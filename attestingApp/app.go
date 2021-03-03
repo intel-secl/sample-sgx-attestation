@@ -6,13 +6,10 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/constants"
+	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-	"os"
-
 	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 var errInvalidCmd = errors.New("Invalid input after command")
@@ -24,8 +21,7 @@ type App struct {
 	ExecLinkPath   string
 	RunDirPath     string
 
-	Config *config.Configuration
-
+	Config *common.Configuration
 }
 
 func (a *App) Run(args []string) error {
@@ -35,7 +31,7 @@ func (a *App) Run(args []string) error {
 		}
 	}()
 	if len(args) < 2 {
-		err := errors.New("Invalid usage of " + constants.ServiceName)
+		err := errors.New("Invalid usage of Attesting App ")
 		a.printUsageWithError(err)
 		return err
 	}
@@ -60,23 +56,21 @@ func (a *App) Run(args []string) error {
 			fmt.Println("Error loading configuration")
 			os.Exit(1)
 		} else {
-			log.Info ("Configuration loaded.")
+			log.Info("Configuration loaded.")
 		}
 		return a.startVerifier()
 	}
-	return nil
 }
 
-
-func (a *App) configuration() *config.Configuration {
-	c, err := config.LoadConfiguration()
+func (a *App) configuration() *common.Configuration {
+	c, err := common.LoadConfiguration()
 
 	if err == nil {
 		a.Config = c
 		return a.Config
 	}
 
-	log.Error ("Configuration file not found.")
+	log.Error("Configuration file not found.")
 
 	return nil
 }

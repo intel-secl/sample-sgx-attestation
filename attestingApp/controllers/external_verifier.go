@@ -6,23 +6,21 @@ package controllers
 
 import (
 	"bytes"
-	"encoding/json"
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
-	// "github.com/intel-secl/intel-secl/v3/pkg/lib/common/crypt"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/config"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/constants"
+	"encoding/json"
+	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	cos "intel/isecl/lib/common/v3/os"
+	"io/ioutil"
 	"net/http"
 )
 
 // ExternalVerifier verifies quotes when SGX Attestation service is NOT operating in standalone mode
 // in cooperation with CMS, AAS, SQVS etc.
 type ExternalVerifier struct {
-	Config     *config.Configuration
+	Config     *common.Configuration
 	CaCertsDir string
 }
 
@@ -33,7 +31,8 @@ type QuoteData struct {
 
 // VerifyQuote implements the Verifier interface
 func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAttributes, error) {
-	url := ev.Config.SqvsUrl + constants.VerifyQuote
+	log.Info("Verifying SGX quote with SQVS...")
+	url := ev.Config.SqvsUrl + common.VerifyQuote
 
 	var quoteData QuoteData
 	quoteData.QuoteBlob = quote
@@ -62,7 +61,7 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 	}
 
 	// Look for certificates in the current directory
-	// CMS root CA cert might be available.	
+	// CMS root CA cert might be available.
 	rootCaCertPems, err := cos.GetDirFileContents("./", "*.pem")
 
 	for _, rootCACert := range rootCaCertPems {
@@ -83,7 +82,7 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 		},
 	}
 
-	log.Infof ("Posting quote to %s ...", url)
+	log.Infof("Posting quote to %s ...", url)
 
 	resp, err := client.Do(req)
 	if resp != nil {
@@ -96,7 +95,7 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 	}
 
 	if err != nil {
-		log.Error (err)
+		log.Error(err)
 		return QuoteVerifyAttributes{}, errors.Wrap(err, "controllers/external_verifier:VerifyQuote() Error in sending quote verification request.")
 	}
 
@@ -105,7 +104,7 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 		return QuoteVerifyAttributes{}, errors.New("controllers/external_verifier:VerifyQuote() Quote Verification failed.")
 	}
 
-	log.Info("Response Status:", resp.Status)
+	log.Info("SQVS Response Status:", resp.Status)
 
 	response, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -113,7 +112,7 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 		return QuoteVerifyAttributes{}, err
 	}
 
-	log.Info("Response Body:", string(response))
+	log.Info("SQVS Response Body:", string(response))
 
 	// Unmarshal JSON response
 	var responseAttributes QuoteVerifyAttributes
@@ -121,7 +120,7 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 	if err != nil {
 		return QuoteVerifyAttributes{}, errors.Wrap(err, "controllers/external_verifier:VerifyQuote() Error in unmarshalling response.")
 	}
-	log.Info("controllers/external_verifier:VerifyQuote() Successfully verified quote in non-standalone mode.")
+	log.Info("controllers/external_verifier:VerifyQuote() Successfully verified quote.")
 
 	return responseAttributes, nil
 }

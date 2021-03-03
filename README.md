@@ -2,10 +2,12 @@
 
 The project demonstrates several fundamental usages of Intel(R) Software Guard Extensions (Intel(R) SGX) SDK:
 
-- Initializing and destroying an enclave
-- Generate Quote Inside enclave
+- Initializing and destroying a SGX enclave
+- Generate a Quote inside the enclave
 - Creating a public/private key pair inside the enclave and including the hash of public key in the SGX quote
 - Verify the SGX quote using SGX Quote Verification Service (SQVS)
+- Provision a Symmetric Wrapping Key (SWK)
+- Provision a Secret wrapped by SWK.
 
 --------------------------------------------------------------------------------
 
@@ -64,7 +66,7 @@ log:
 
 - Run `make all` to build the project.
 
-Binaries are created in `attestedApp/out` and `attestingApp/out` folder:
+Binaries are created in `<source folder>/out`:
 
 - sgx-attesting-app - binary for the Attesting App
 - sgx-attested-app - binary for the Attested App.
@@ -102,9 +104,9 @@ Sample configuration (config.yml)
 
 Name               | Type    | Description                                                                                                                                                                                                                                                     | Required Default Value
 ------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------
-tenantservice-host | string  | Host on which the tenant app service is deployed                                                                                                                                                                                                                | No                     | 127.0.0.1
-tenantservice-port | int     | Listener Port for the tenant app service                                                                                                                                                                                                                        | No                     | 9999
-sqvs_url | int     | Listener Port for the tenant app service                                                                                                                                                                                                                        | No                     | 9999
+attestedapp-host | string  | Host on which the attested app service is deployed                                                                                                                                                                                                                | No                     | 127.0.0.1
+attestedapp-port | int     | Listener Port for the attested app service                                                                                                                                                                                                                        | No                     | 9999
+sqvs_url | string     | Listener Port for the tenant app service                                                                                                                                                                                                                        | No                     | 9999
 
 --------------------------------------------------------------------------------
 
@@ -118,33 +120,44 @@ sqvs_url | int     | Listener Port for the tenant app service                   
 - Update /etc/sgx_default_qcnl.conf with SCS IP and port.
 - Set SQVS_INCLUDE_TOKEN=false in SQVS config.yaml and restart SQVS.
 
+#### Updating configuration files
+
+- Update the configuration file at {source folder}/config.yml.tmpl
+
+```yaml
+attestedapp-host: 127.0.0.1
+attestedapp-port: 9999
+sqvs-url: https://<sqvs>:<port>/svs/v1
+```
+
 #### Updating attesting App's policy file
 
-- Create a policy file yaml file at /etc/sgx-app-verifier/sgx-quote-policy.txt using the template from <source folder>/attestingApp/build/linux/sgx-quote-policy.txt with the following fields
+- The MREnclave value changes when there is a change in the Enclave. After every change and a build this might need to be updated. 
+- Update the policy file at {source folder}/sgx-quote-policy.txt using the template from {source folder}/sgx-quote-policy.txt with the following fields:
 
 ```yaml
 MREnclave:
 MRSigner:
 CPU_SVN:
 ```
-
-- Run the sgx_sign utility to get information on MR Enclave and MR Signer needed by the offline policy file.
+- Run the sgx_sign utility to get values of MR Enclave and MR Signer needed by the policy file.
 
 ```bash
-cd <source folder>
+cd {source folder}
 sgx_sign dump -enclave ./attestedApp/lib/enclave.signed.so -dumpfile info.txt
 ```
 
 - In info.txt, search for "mrsigner->value" and add this to "MRSigner:" in /etc/sgx-app-verifier/sgx-quote-policy.txt.
 - In info.txt, search for "metadata->enclave_css.body.enclave_hash.m:" and add this to "MREnclave:" in /etc/sgx-app-verifier/sgx-quote-policy.txt
-- In info.txt , mrsigner->value: "0x83 0xd7 0x19 0xe7 0x7d 0xea 0xca 0x14 0x70 0xf6 0xba 0xf6 0x2a 0x4d 0x77 0x43 0x03 0xc8 0x99 0xdb 0x69 0x02 0x0f 0x9c 0x70 0xee 0x1d 0xfc 0x08 0xc7 0xce 0x9e" needs to be added as "MRSigner:83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e" in sgx-quote-policy.txt . Same applies for MREnclave.
-- E.g /etc/sgx-app-verifier/sgx-quote-policy.txt :
+- E.g : In info.txt  mrsigner->value: "0x83 0xd7 0x19 0xe7 0x7d 0xea 0xca 0x14 0x70 0xf6 0xba 0xf6 0x2a 0x4d 0x77 0x43 0x03 0xc8 0x99 0xdb 0x69 0x02 0x0f 0x9c 0x70 0xee 0x1d 0xfc 0x08 0xc7 0xce 0x9e" needs to be added as "MRSigner:83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e" in sgx-quote-policy.txt . Remove '0x' and spaces. Same applies for MREnclave.
+- Contents of a good sgx-quote-policy.txt file would look like : 
 
 ```yaml
 MREnclave:c80de12554feb664496c59f708954aca1572a8cf60f2184f99857081b6314bb8
 MRSigner:83d719e77deaca1470f6baf62a4d774303c899db69020f9c70ee1dfc08c7ce9e
 CPU_SVN:00
 ```
+- Run `make all`. This would copy the policy file and the config.yml to {source folder}/out
 
 ### SGX Attested App
 
@@ -152,12 +165,10 @@ CPU_SVN:00
 - Run the Attested App binary first in a new terminal:
 
   ```bash
-  cd <source folder>/attestedApp/out/
+  cd {source folder}/out/
   ./sgx-attested-app run
   ```
-
-- This initializes the enclave inside the Tenant App
-- And starts the TCP listener on the configured port
+- This initializes the enclave inside the Attested App and starts the TCP listener on the configured port.
 
 ### SGX Attesting App
 
@@ -165,7 +176,7 @@ CPU_SVN:00
 - Run the Attesting App binary in a new terminal:
 
   ```bash
-   cd <source folder>/attestingApp/out/
+   cd <source folder>/out/
   ./sgx-attesting-app run
   ```
 
@@ -174,10 +185,10 @@ These are the components involved:
 Component             | Short Name         | Implmented In | Requires SGX for deploy | Requires SGX for build
 --------------------- | ------------------ | ------------- | ----------------------- | ----------------------
 sgx-attesting-app      | verifier           | Go            | No                      | No
-sgx-attested-app | Tenant App Service | Go            | Yes                     | Yes
-attestedApp/        | SGX workload       | C             | Yes                     | Yes                    |
+sgx-attested-app | Attested App Service | Go            | Yes                     | Yes
+libenclave      | SGX Enclave Workload           | C/C++            | Yes                      | Yes
 
-### Quote Verification Workflow
+### Secret Provisioning Workflow:
 
 1. The attestingApp will transmit a CONNECT message to the attestedApp service over a TCP socket.
 2. The attestedApp service, parses the CONNECT request and fetches the quote from the SGX workload running inside the SGX enclave. "The extended quote" is sent back in the response - containing the quote and the enclave's public key.

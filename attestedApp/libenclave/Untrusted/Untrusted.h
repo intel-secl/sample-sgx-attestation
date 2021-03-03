@@ -29,59 +29,51 @@
  *
  */
 
-#define __STDC_WANT_LIB_EXT1__ 1
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _UNTRUSTED_H_
+#define _UNTRUSTED_H_
+
 #include <assert.h>
-#include<iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stdbool.h>
 
-# include <unistd.h>
-# include <pwd.h>
-# include <sgx_defs.h>
-# define MAX_PATH FILENAME_MAX
+#include "sgx_error.h"       /* sgx_status_t */
+#include "sgx_eid.h"     /* sgx_enclave_id_t */
+#include "sgx_defs.h"     /* sgx_enclave_id_t */
 
-#include "sgx_error.h"
-#include "Untrusted.h"
-#include "sgx_urts.h"
+#ifndef TRUE
+#define TRUE 1
+#endif
 
-using namespace std;
+#ifndef FALSE
+#define FALSE 0
+#endif
 
-/* Application entry */
-int SGX_CDECL main(int argc, char *argv[])
-{
-    cout << "App starting..." << endl;
+# define TOKEN_FILENAME   "enclave.token"
+# define ENCLAVE_FILENAME "/usr/lib64/libenclave_signed.so"
 
-    (void)(argc);
-    (void)(argv);
+extern sgx_enclave_id_t global_eid;    /* global enclave id */
 
-    int status = 0;
-    status = init();
-		
-    if (status != 0) {
-	cout << "Failed to initialize enclave!" << endl;
-	printf("Enter a character before exit ...\n");
-	getchar();
-	return 0;
-    }
+void print_error_message(sgx_status_t ret);
+int initialize_enclave(void);
 
-    ///Ecalls will come here. Call here and defins in enclave.cpp
-    int size, key_size = 0;
-    uint8_t* publicKey = NULL;
-    uint8_t* quote = get_SGX_Quote(&size, &key_size);
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-    printf("Size of quote is: %d\n", size);
-    printf("Size of key is: %d\n", key_size);
+  int SGX_CDECL init();
+  int destroy_Enclave();
 
-    uint8_t* p_quote = (uint8_t*)malloc(size);
-    memcpy(p_quote, quote, size);
+  int get_Key();
+  uint8_t* get_SGX_Quote(int* x, int*y);
+  uint8_t* get_pubkey(int* x);
 
-    publicKey = (uint8_t*)malloc(key_size);
-    memcpy(publicKey, p_quote+key_size, key_size);
-
-    destroy_Enclave();
-
-    printf("Enter a character before exit ...\n");
-    getchar();
-    return 0;
+  int unwrap_SWK(uint8_t* wrappedSWK, size_t wrappedSWKSize);
+  int unwrap_secret(uint8_t* wrappedSecret, size_t wrappedSecretSize);
+#if defined(__cplusplus)
 }
+#endif
+
+#endif /* !_UNTRUSTED_H_ */

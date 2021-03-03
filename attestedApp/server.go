@@ -4,78 +4,251 @@
  */
 package main
 
+// #cgo CFLAGS: -I /opt/intel/sgxsdk/include -I /usr/lib/
+// #cgo LDFLAGS: -L/root/src/sample-sgx-attestation/attestedApp/out/ -L /usr/lib64 -luntrusted -lssl -lcrypto
+// #include "./libenclave/Untrusted/Untrusted.h"
+import "C"
+
 import (
-	"bufio"
-	"encoding/base64"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/domain"
-	"github.com/intel-secl/sample-sgx-attestation/v3/pkg/tcpmsglib"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestedApp/constants"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestedApp/controller"
+	"encoding/gob"
+	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-
 	log "github.com/sirupsen/logrus"
-
 	"net"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"unsafe"
 )
 
-func (a *App) handleConnection(connection net.Conn, sh *controller.SocketHandler) {
-	log.Trace("app:handleConnection() Entering")
-	defer log.Trace("app:handleConnection() Leaving")
+func (a *App) getPubkeyFromEnclave() []byte {
+	var keyBuffer []byte
+	var pubKeySize C.int
+	var keyPtr *C.u_int8_t
 
-	var resp *domain.TenantAppResponse
+	keyPtr = C.get_pubkey(&pubKeySize)
+	log.Info("getPubkeyFromEnclave : Pub key length : ", pubKeySize)
 
+	keyBuffer = C.GoBytes(unsafe.Pointer(keyPtr), pubKeySize)
+
+	return keyBuffer
+}
+
+func (a *App) getQuoteAndPubkeyFromEnclave() ([]byte, []byte) {
+	var qBytes []byte
+	var kBytes []byte
+
+	// qSize holds the length of the quote byte array returned from enclave
+	var qSize C.int
+	var keySize C.int
+
+	// qPtr holds the bytes array of the quote returned from enclave
+	var qPtr *C.u_int8_t
+
+	qPtr = C.get_SGX_Quote(&qSize, &keySize)
+	log.Printf("Quote size : %d", qSize)
+	qBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize)
+	kBytes = C.GoBytes(unsafe.Pointer(qPtr), qSize+keySize)
+
+	return kBytes, qBytes
+}
+
+func (a *App) receiveConnectRequest(connection net.Conn) (error, bool) {
+	authenticated := false
+
+	gobDecoder := gob.NewDecoder(connection)
+	requestMsg := new(common.Message)
+	err := gobDecoder.Decode(requestMsg)
+	if err != nil {
+		log.Error("Decoding connect message failed!")
+		return err, authenticated
+	}
+
+	if requestMsg.Type != common.MsgTypeConnect {
+		err = errors.New("Incorrect message type!")
+		log.Error("Incorrect message type!")
+		return err, authenticated
+	}
+
+	if requestMsg.ConnectRequest.Username == common.AppUsername &&
+		requestMsg.ConnectRequest.Password == common.AppPassword {
+		authenticated = true
+	}
+
+	return err, authenticated
+}
+
+func (a *App) sendPubkeySGXQuote(connection net.Conn) error {
+
+	// Get the quote from Enclave
+	pubKey, sgxQuote := a.getQuoteAndPubkeyFromEnclave()
+
+	// Get public key from Enclave.
+	pubKey = a.getPubkeyFromEnclave()
+
+	// Prepare response with SGX Quote and Enclave
+	log.Info("Sending Pubkey and SGX Quote message...")
+	gobEncoder := gob.NewEncoder(connection)
+	responseMsg := new(common.Message)
+	responseMsg.Type = common.MsgTypePubkeyQuote
+	responseMsg.PubkeyQuote.Pubkey = pubKey
+	responseMsg.PubkeyQuote.Quote = sgxQuote
+
+	// Send quote + public key to attestingApp
+	err := gobEncoder.Encode(responseMsg)
+	if err != nil {
+		log.Error("Encoding Pubkey Quote message failed!")
+	}
+
+	return err
+}
+
+func (a *App) receivePubkeyWrappedSWK(connection net.Conn) error {
+	log.Info("Receiving Pubkey wrapped SWK message...")
+	gobWrappedSWKDecoder := gob.NewDecoder(connection)
+	wrappedSWKMsg := new(common.Message)
+	err := gobWrappedSWKDecoder.Decode(wrappedSWKMsg)
+	if err != nil {
+		log.Error("Decoding Pubkey wapped SWK message failed!")
+		return err
+	}
+
+	if wrappedSWKMsg.Type != common.MsgTypePubkeyWrappedSWK {
+		err = errors.New("Incorrect message type!")
+		log.Error("Incorrect message type!")
+		return err
+	}
+
+	log.Info("Wrapped SWK Received length : ", len(wrappedSWKMsg.PubkeyWrappedSWK.WrappedSWK))
+
+	pSize := C.ulong(len(wrappedSWKMsg.PubkeyWrappedSWK.WrappedSWK))
+	log.Info("Size of Wrapped SWK : ", pSize)
+
+	pStr := C.CBytes(wrappedSWKMsg.PubkeyWrappedSWK.WrappedSWK)
+	p := (*C.uint8_t)(unsafe.Pointer(pStr))
+
+	// Unwrap inside the enclave.
+	status := C.unwrap_SWK(p, pSize)
+	if status != 0 {
+		err = errors.New("SWK unwrapping failed!")
+	}
+
+	return err
+}
+
+func (a *App) receiveSWKWrappedSecret(connection net.Conn) error {
+	log.Info("Receiving SWK wrapped Secret message...")
+	gobWrappedSecretDecoder := gob.NewDecoder(connection)
+	wrappedSecretMsg := new(common.Message)
+
+	err := gobWrappedSecretDecoder.Decode(wrappedSecretMsg)
+	if err != nil {
+		log.Error("Decoding wrapped secret message failed!")
+		return err
+	}
+
+	if wrappedSecretMsg.Type != common.MsgTypeSWKWrappedSecret {
+		err = errors.New("Incorrect message type!")
+		log.Error("Incorrect message type!")
+		return err
+	}
+
+	if len(wrappedSecretMsg.SWKWrappedSecret.WrappedSecret) == 0 {
+		log.Error("Wrapped secret Size can't be zero")
+		err = errors.New("Wrapped secret Size can't be zero!")
+		return err
+	}
+
+	pSecretSize := C.ulong(len(wrappedSecretMsg.SWKWrappedSecret.WrappedSecret))
+	pSecret := C.CBytes(wrappedSecretMsg.SWKWrappedSecret.WrappedSecret)
+	pSecretPtr := (*C.uint8_t)(unsafe.Pointer(pSecret))
+
+	//Unwrap the secret inside the Enclave
+	status := C.unwrap_secret(pSecretPtr, pSecretSize)
+	if status != 0 {
+		err = errors.New("Unwrapping of secret failed!")
+	}
+
+	return err
+}
+
+func (a *App) handleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	if sh == nil {
-		log.Fatalf("server:handleConnection SocketHandler not initialized")
-	}
-
-	log.Printf("Serving %s\n", connection.RemoteAddr().String())
-	b64Req, err := bufio.NewReader(connection).ReadBytes('\n')
+	// Step 1 - Receive a connect request
+	err, authenticated := a.receiveConnectRequest(connection)
 	if err != nil {
-		log.WithError(err).Errorf("server:handleConnection failed to read request body")
-		resp = &domain.TenantAppResponse{
-			RequestType: constants.ReqTypeConnect,
-			RespCode:    constants.ResponseCodeFailure,
-			ParamLength: 0,
-		}
-	} else {
-
-		// base64 decode the request
-		rawReq, err := base64.StdEncoding.DecodeString(string(b64Req))
-		if err != nil {
-			log.WithError(err).Errorf("server:handleConnection request base64 decode failed")
-		}
-
-		taRequest := tcpmsglib.UnmarshalRequest(rawReq)
-
-		switch taRequest.RequestType {
-		case constants.ReqTypeConnect:
-			resp, err = sh.HandleConnect(taRequest)
-		}
-
-		if err != nil {
-			log.WithError(err).Error("server:handleConnection Error processing request")
-		}
+		log.Error("server:handleConnection : ", err)
+		return err
 	}
 
+	if !authenticated {
+		err = errors.New("Connection authentication failed!")
+		log.Error("server:handleConnection : ", err)
+		return err
+	}
+
+	// Step 2 - Get the quote from enclave and send it to
+	// the attesting app.
+	err = a.sendPubkeySGXQuote(connection)
 	if err != nil {
-		log.Info("server:handleConnection Sending failure response")
-		resp = &domain.TenantAppResponse{
-			RequestType: constants.ReqTypeConnect,
-			RespCode:    constants.ResponseCodeFailure,
-			ParamLength: 0,
-		}
-	} else {
-		log.Info("server:handleConnection Sending success response")
+		log.Error("server:handleConnection : ", err)
+		return err
 	}
 
-	// send base64 encoded response
-	connection.Write([]byte(base64.StdEncoding.EncodeToString(tcpmsglib.MarshalResponse(*resp)) + constants.EndLine))
+	// Step 3 - Wait and receive public key wrapped SWK.
+	err = a.receivePubkeyWrappedSWK(connection)
+	if err != nil {
+		log.Error("server:handleConnection : ", err)
+		return err
+	}
+
+	// Step 4 - Receive SWK wrapped secret
+	a.receiveSWKWrappedSecret(connection)
+	if err != nil {
+		log.Error("server:handleConnection : ", err)
+		return err
+	}
+
+	return nil
+}
+
+// EnclaveInit initializes the enclave.
+func (a *App) EnclaveInit() error {
+	log.Trace("EnclaveInit Entering")
+	defer log.Trace("EnclaveInit Leaving")
+
+	var enclaveInitStatus C.int
+
+	// Initialize enclave
+	log.Info("Initializing enclave...")
+	enclaveInitStatus = C.init()
+
+	if enclaveInitStatus != 0 {
+		return errors.Errorf("EnclaveInit Failed to initialize enclave. Error code: %d", enclaveInitStatus)
+	}
+
+	log.Info("Enclave initialized.")
+
+	return nil
+}
+
+// EnclaveDestroy cleans up the enclave on exit
+func (a *App) EnclaveDestroy() error {
+	log.Trace("EnclaveDestroy Entering")
+	defer log.Trace("EnclaveDestroy Leaving")
+
+	// Destroy enclave
+	enclaveDestroyStatus := C.destroy_Enclave()
+
+	if enclaveDestroyStatus != 0 {
+		return errors.Errorf("Failed to destroy enclave. Error code: %d", enclaveDestroyStatus)
+	}
+
+	log.Info("controller/socket_handler:EnclaveInit Destroyed enclave")
+
+	return nil
 }
 
 func (a *App) startServer() error {
@@ -87,22 +260,21 @@ func (a *App) startServer() error {
 		return errors.New("Failed to load configuration")
 	}
 
-	log.Info("Starting TenantAppService")
+	log.Info("Starting Attested App ...")
 
 	// check if socket can be opened up
-	listenAddr := c.TenantServiceHost + ":" + strconv.Itoa(c.TenantServicePort)
-	log.Infof("app:startServer Binding to %s", listenAddr)
-	listener, err := net.Listen(constants.ProtocolTcp, listenAddr)
+	listenAddr := c.AttestedAppServiceHost + ":" + strconv.Itoa(c.AttestedAppServicePort)
+	log.Infof("Attested App socket binding to %s", listenAddr)
+	listener, err := net.Listen(common.ProtocolTcp, listenAddr)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
 		return err
 	}
 	defer listener.Close()
 
-	sh := controller.SocketHandler{Config: a.Config}
-	err = sh.EnclaveInit()
+	err = a.EnclaveInit()
 	if err != nil {
-		log.WithError(err).Error("app:startServer() Error initializing enclave")
+		log.WithError(err).Error("app:startServer() Error initializing enclave!")
 		return err
 	}
 
@@ -119,7 +291,8 @@ func (a *App) startServer() error {
 				log.Error(errors.Wrapf(err, "app:startServer() Error binding to socket %s", listenAddr))
 				break
 			}
-			go a.handleConnection(conn, &sh)
+			go a.handleConnection(conn)
+
 		}
 		done <- true
 	}()
@@ -132,11 +305,12 @@ func (a *App) startServer() error {
 
 	<-done
 	// let's destroy enclave and exit
-	err = sh.EnclaveDestroy()
+	err = a.EnclaveDestroy()
 
 	if err != nil {
 		log.WithError(err).Info("app:startServer() Error destroying enclave")
 	}
 
 	return nil
+
 }

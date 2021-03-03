@@ -6,10 +6,8 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/constants"
-
 	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/version"
+	"os"
 )
 
 const helpStr = `Usage:
@@ -32,5 +30,5 @@ func (a *App) printUsageWithError(err error) {
 }
 
 func (a *App) printVersion() {
-	fmt.Fprintf(os.Stdout, "%s %s-%s\nBuilt %s\n", constants.ServiceName, version.Version, version.GitHash, version.BuildDate)
+	fmt.Fprintf(os.Stdout, "%s %s-%s\nBuilt %s\n", "Attesting App", version.Version, version.GitHash, version.BuildDate)
 }

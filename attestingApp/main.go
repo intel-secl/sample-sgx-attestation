@@ -9,16 +9,14 @@ import (
 	"os"
 )
 
-
 func main() {
 	var app *App
 
-	app = &App{
-	}
+	app = &App{}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println("Tenant Verifier Application returned with error:", err.Error())
+		fmt.Println("Error:", err.Error())
 		os.Exit(1)
 	}
 }

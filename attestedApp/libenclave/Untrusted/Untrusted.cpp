@@ -53,6 +53,10 @@
 #include "sgx_dcap_ql_wrapper.h"
 #include <sgx_tcrypto.h>
 
+#include <openssl/bn.h>
+#include <openssl/evp.h>
+#include <openssl/rsa.h>
+
 using namespace std;
 
 /* Global EID shared by multiple threads */
@@ -155,14 +159,14 @@ void print_error_message(sgx_status_t ret)
     for (idx = 0; idx < ttl; idx++) {
         if(ret == sgx_errlist[idx].err) {
             if(NULL != sgx_errlist[idx].sug)
-                printf("Info: %s\n", sgx_errlist[idx].sug);
-            printf("Error: %s\n", sgx_errlist[idx].msg);
+                printf("INFO : %s\n", sgx_errlist[idx].sug);
+            printf("ERROR : %s\n", sgx_errlist[idx].msg);
             break;
         }
     }
     
     if (idx == ttl)
-    	printf("Error code is 0x%X. Please refer to the \"Intel SGX SDK Developer Reference\" for more details.\n", ret);
+    	printf("SGX status code is 0x%X. Please refer to the \"Intel SGX SDK Developer Reference\" for more details.\n", ret);
 }
 
 /* Initialize the enclave:
@@ -174,10 +178,10 @@ int initialize_enclave(void)
     
     /* Call sgx_create_enclave to initialize an enclave instance */
     /* Debug Support: set 2nd parameter to 1 */
-    cout << "Untrusted : Info : Enclave path : " << ENCLAVE_FILENAME << "\t" << endl;
-    cout << "Untrusted : Info : SGX_DEBUG_FLAG : " <<SGX_DEBUG_FLAG << endl;
+    cout << "INFO : Untrusted - Enclave path : " << ENCLAVE_FILENAME << "\t" << endl;
+    cout << "INFO : Untrusted - SGX_DEBUG_FLAG : " <<SGX_DEBUG_FLAG << endl;
 
-    cout << "Untrusted : Info : Creating enclave ..." <<endl;
+    cout << "INFO : Untrusted - Creating enclave ..." <<endl;
     ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, NULL, NULL, &global_eid, NULL);
 
     if (ret != SGX_SUCCESS) {
@@ -185,13 +189,13 @@ int initialize_enclave(void)
         return -1;
     }
 
-    cout << "Untrusted : Info : Enclave created." <<endl;
+    cout << "INFO : Untrusted - Enclave created." <<endl;
 
     return 0;
 }
 
 int destroy_Enclave() {
-    cout << "Untrusted : Info : Destroying enclave.." <<endl;
+    cout << "INFO : Untrusted - Destroying enclave..." <<endl;
 
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
@@ -200,83 +204,102 @@ int destroy_Enclave() {
 }
 
 /* OCall functions */
-void ocall_print_string(const char *str)
+void ocall_print_info_string(const char *str)
 {
     /* Proxy/Bridge will check the length and null-terminate 
      * the input string to prevent buffer overflow. 
      */
-    printf("Inside Enclave : %s\n", str);
+    printf("INFO : Inside Enclave : %s\n", str);
 }
 
-void ocall_print_string1(const size_t *str)
+void ocall_print_error_string(const char *str)
 {
     /* Proxy/Bridge will check the length and null-terminate 
      * the input string to prevent buffer overflow. 
      */
-    cout  << "Inside Enclave : " << *str << endl;
-}
-
-void ocall_print_string2(char *str, size_t* size)
-{
-    printf("Inside Enclave : Get length of string -> %d\n", strlen(str));
-
-    unsigned char* a1 = NULL;
-    a1 = (unsigned char*)malloc(*size);
-    memcpy(a1, (unsigned char*)str, *size);
-
-    for(int i= 0; i< *size; i++) {
-	printf("%x",a1[i]);
-    }
-
-    printf("\n");
-}
-
-void ocall_print_string3(unsigned char *str, size_t* size)
-{
-    for(int i= 0; i< *size; i++) {
-	printf("%x",str[i]);
-    }
-
-    printf("\n");
-}
-
-void ocall_print_string4(const size_t str)
-{
-    /* Proxy/Bridge will check the length and null-terminate 
-     * the input string to prevent buffer overflow. 
-     */
-
-    printf("Inside Enclave : %s", str);
-}
-
-void ocall_print_uint8_t(uint8_t* str, size_t *size)
-{
-    printf("In ocall_print_uint8_t \n");
-    printf("address of str is: %p\n", str);
-    for(int i=0; i< *size; i++) {
-        printf("%x", str[i]);
-    }
-    printf("\n");
+    printf("ERROR : Inside Enclave : %s\n", str);
 }
 
 int get_Key()
 {
-    printf("Untrusted : Info : Fetching public key...\n");
+    printf("INFO : Untrusted - Fetching public key...\n");
 
-    int count;
-    enclave_pubkey(global_eid, &status, &g_rsa_key1, &count);
+    size_t count;
+    
+    enclave_pubkey(global_eid, &status, &g_rsa_key1);
 
     if (status != SGX_SUCCESS) {
         print_error_message(status);
         return -1;
     }
+    
+    return 0;
+}
+int unwrap_secret(uint8_t* wrapped_secret, size_t wrapped_secret_size) {
+    printf ("INFO : Untrusted - unwrap_secret: Wrapped Secret Size is: %d\n", wrapped_secret_size);
+    sgx_status_t status = SGX_SUCCESS;
+
+    status = provision_swk_wrapped_secret(global_eid, &status,
+                                          (uint8_t *)wrapped_secret,
+                                          wrapped_secret_size);
+
+    print_error_message(status);
+
+    if (status != SGX_SUCCESS) {
+        print_error_message(status);
+        printf ("\n");
+        return -1;
+    }
+
+    printf ("INFO : Untrusted - unwrap_secret: Sucessfully unwrapped the secret.\n");
     return 0;
 }
 
+int unwrap_SWK(uint8_t* wrappedSWK, size_t wrappedSWKsize) {
+
+    sgx_status_t status = SGX_SUCCESS;
+
+    cout << "INFO : Untrusted - Passing wrapped SWK to enclave...\n";
+    sgx_status_t ret = provision_pubkey_wrapped_swk(global_eid, &status,
+                                                    wrappedSWK, wrappedSWKsize);
+
+    if (status != SGX_SUCCESS) {
+        printf("ERROR : Untrusted - Failed to get unwrapped SWK - status: ");
+        print_error_message (status);
+        printf("\n");
+        return status;
+    }
+
+    if (ret != SGX_SUCCESS) {
+        printf("ERROR : Untrusted - Failed to get unwrapped SWK - ret: ");
+        print_error_message (ret);
+        printf("\n");
+        return ret;
+    }
+
+    return status;
+}
+
+uint8_t *get_pubkey (int *kSize) 
+{
+        uint8_t* key_buffer = NULL;
+
+        const char* exponent = (const char *)g_rsa_key1.e;
+        const char* modulus = (const char *)g_rsa_key1.n;
+
+        key_buffer = (uint8_t*)malloc(REF_N_SIZE_IN_BYTES + REF_E_SIZE_IN_BYTES);
+
+        memcpy(key_buffer, exponent, REF_E_SIZE_IN_BYTES);
+        memcpy(key_buffer+REF_E_SIZE_IN_BYTES, modulus, REF_N_SIZE_IN_BYTES);
+
+        *kSize = REF_E_SIZE_IN_BYTES + REF_N_SIZE_IN_BYTES;
+
+        return key_buffer;
+}
+
+
+
 uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
-
-        cout << "Untrusted : Info : Generating quote..." << endl;
-
         int ret = 0;
         uint32_t retval = 0;
         quote3_error_t qe3_ret = SGX_QL_SUCCESS;
@@ -292,6 +315,7 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
         sgx_ql_certification_data_t *p_cert_data;
         FILE *fptr = NULL;
 
+        cout << "INFO : Untrusted - ECALL : get public key..." << endl;
         ret = get_Key();
 
         const char* exponent = (const char *)g_rsa_key1.e;
@@ -301,73 +325,74 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
         memcpy(key_buffer, exponent, REF_E_SIZE_IN_BYTES);
         memcpy(key_buffer+REF_E_SIZE_IN_BYTES, modulus, REF_N_SIZE_IN_BYTES);
 
-
         if (ret != 0) {
-            cout << "Untrusted : Error in getting public key" <<endl;
+            cout << "ERROR : Untrusted -  Error in getting public key" <<endl;
             ret = -1;
         }
 
         qe3_ret = sgx_qe_set_enclave_load_policy(SGX_QL_PERSISTENT);
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("Untrusted : Error in set enclave load policy: 0x%04x\n", qe3_ret);
+            printf("ERROR : Untrusted - Error in set enclave load policy: 0x%04x\n", qe3_ret);
             ret = -1;
         }
 
         qe3_ret = sgx_ql_set_path(SGX_QL_PCE_PATH, "/usr/lib64/libsgx_pce.signed.so");
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("Untrusted : Error in set PCE directory: 0x%04x.\n", qe3_ret);
+            printf("ERROR : Untrusted - Error in set PCE directory: 0x%04x.\n", qe3_ret);
             ret = -1;
         }
         qe3_ret = sgx_ql_set_path(SGX_QL_QE3_PATH, "/usr/lib64/libsgx_qe3.signed.so");
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("Untrusted : Error in set QE3 directory: 0x%04x.\n", qe3_ret);
+            printf("ERROR : Untrusted - Error in set QE3 directory: 0x%04x.\n", qe3_ret);
             ret = -1;
         }
         qe3_ret = sgx_ql_set_path(SGX_QL_QPL_PATH, "/usr/lib64/libdcap_quoteprov.so.1");
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("Untrusted : Info: /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 not found.\n");
+            printf("ERROR : Untrusted - /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 not found.\n");
         }
-        printf("Untrusted : Info : Fetching target info...\n");
+        printf("INFO : Untrusted - Fetching target info...\n");
         qe3_ret = sgx_qe_get_target_info(&qe_target_info);
         if (SGX_QL_SUCCESS != qe3_ret) {
             printf("Error in sgx_qe_get_target_info. 0x%04x\n", qe3_ret);
             ret = -1;
         }
-        printf("Untrusted : Info : Fetching quote size..\n");
+        printf("INFO : Untrusted - Fetching SQX quote size..\n");
         qe3_ret = sgx_qe_get_quote_size(&quote_size);
         if (SGX_QL_SUCCESS != qe3_ret) {
             printf("Error in sgx_qe_get_quote_size. 0x%04x\n", qe3_ret);
             ret = -1;
         }
-        printf("Untrusted : Info : Quote size is %d bytes.\n", quote_size);
+        printf("INFO : Untrusted - Quote size is %d bytes.\n", quote_size);
 
         p_quote_buffer = (uint8_t*)malloc(quote_size);
         if (NULL == p_quote_buffer) {
-            printf("Couldn't allocate quote_buffer\n");
+            printf("ERROR : Couldn't allocate quote_buffer\n");
             ret = -1;
         }
         memset(p_quote_buffer, 0, quote_size);
 
         sgx_status_t value;
 
-        printf("Untrusted : Info : Making an ecall - enclave_create_report...\n");
+        printf("INFO : Untrusted - ECALL - fetching enclave report...\n");
         status = enclave_create_report(global_eid,
                                        &retval,
-                                       &qe_target_info,&reportData,
+                                       &qe_target_info,
+                                       &reportData,
                                        &app_report);
 
         if ((SGX_SUCCESS != status) || (0 != retval)) {
-            printf("Untrusted : Error : Report creation failed.\n");
+            printf("ERROR : Untrusted - Report creation failed.\n");
             ret = false;
         }
 
         // Get the Quote
-        printf("Untrusted : Info : Get qe quote..\n");
+        printf("INFO : Untrusted : Fetching quote..\n");
         qe3_ret = sgx_qe_get_quote(&app_report,
                                    quote_size,
                                    p_quote_buffer);
+
         if (SGX_QL_SUCCESS != qe3_ret) {
-            printf( "Untrusted : Error in sgx_qe_get_quote. 0x%04x\n", qe3_ret);
+            printf( "ERROR : Untrusted - Error in sgx_qe_get_quote. 0x%04x\n", qe3_ret);
             ret = -1;
         }
 
@@ -381,25 +406,26 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
         cert_information = (uint32_t*)malloc(certSize);
 
         if (NULL == cert_information) {
-            printf("Untrusted : Error : Couldn't allocate cert_information buffer\n");
+            printf("ERROR : Untrusted - Couldn't allocate cert_information buffer!\n");
             ret = -1;
         }
+
         memset(cert_information, 0, certSize);
         memcpy(cert_information, (unsigned char*)( p_cert_data->certification_data), certSize);
 
         qe3_ret = sgx_qe_cleanup_by_policy();
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("Untrusted : Error in cleanup enclave load policy: 0x%04x\n", qe3_ret);
+            printf("ERROR : Untrusted - Error in cleanup enclave load policy: 0x%04x\n", qe3_ret);
             ret = -1;
         }
 
-        printf("Untrusted : Info : Quote retrived successfully.\n");
+        printf("INFO : Untrusted - SGX Quote retrived successfully.\n");
 
         *qSize = quote_size;
         *kSize = REF_N_SIZE_IN_BYTES + REF_E_SIZE_IN_BYTES;
 
         uint8_t* challenge_final = NULL;
-        challenge_final = (uint8_t*)malloc((quote_size+REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES));
+        challenge_final = (uint8_t*)malloc((*qSize+*kSize));
 
         memcpy(challenge_final, p_quote_buffer, quote_size);
         memcpy(challenge_final + quote_size, key_buffer, REF_N_SIZE_IN_BYTES+REF_E_SIZE_IN_BYTES);
@@ -415,7 +441,10 @@ int SGX_CDECL init()
     if(initialize_enclave() < 0){
         return -1; 
     }
-    cout << "Untrusted : Info : Enclave  id : " << global_eid <<endl;
+    cout << "INFO : Untrusted - Enclave  id : " << global_eid <<endl;
 
     return 0;
 }
+
+
+
