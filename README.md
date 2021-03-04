@@ -2,12 +2,13 @@
 
 The project demonstrates several fundamental usages of Intel(R) Software Guard Extensions (Intel(R) SGX) SDK:
 
-- Initializing and destroying a SGX enclave
-- Generate a Quote inside the enclave
-- Creating a public/private key pair inside the enclave and including the hash of public key in the SGX quote
-- Verify the SGX quote using SGX Quote Verification Service (SQVS)
-- Provision a Symmetric Wrapping Key (SWK)
-- Provision a Secret wrapped by SWK.
+- Initializing and destroying a SGX enclave hosted in an attestedApp.
+- Generate a signed SGX Report and public/private key pair inside the enclave. Add the hash of public key in the signed report.
+- Generate a quote using SCS with Intel DCAP APIs.
+- Verify the SGX quote using SGX Quote Verification Service (SQVS) by a separate attestingApp
+- Verify that the quote complies with a user-defined quote policy by the attestingApp.
+- Generate a Symmetric Wrapping Key (SWK) in the attestingApp, wrap it with enclave's public key and share it with the enclave.
+- Exchange encrypted secrets between the attestingApp and the enclave using the SWK.
 
 --------------------------------------------------------------------------------
 
@@ -35,34 +36,20 @@ for Linux* OS - Installation guide](https://download.01.org/intel-sgx/latest/lin
  curl --insecure --location --request GET 'https://<cms.server:port>/cms/v1/ca-certificates' --header 'Accept: application/x-pem-file' > rootca.pem
 ```
 
-- Create a configuration file at /etc/sgx-tenantapp-service/config.yml and add the following fields
+- Update the configuration file at {source folder}/config.yml.tmpl
 
 ```yaml
-tenantservice-host: 127.0.0.1
-tenantservice-port: 9999
-log:
-  max-length: 1500
-  enable-stdout: true
-  level: info
-```
-
-- Update the configuration file at {source folder}/attestingApp/config.yml.tmpl
-
-```yaml
-tenantservice-host: 127.0.0.1
-tenantservice-port: 9999
+attestedapp-host: 127.0.0.1
+attestedapp-port: 9999
 sqvs-url: https://<sqvs>:<port>/svs/v1
-server:
-  read-timeout: 30s
-  read-header-timeout: 10s
-  write-timeout: 30s
-  idle-timeout: 10s
-  max-header-bytes: 1048576
-log:
-  max-length: 1500
-  enable-stdout: true
-  level: info
 ```
+
+Name             | Type    | Description |
+-----------------|---------|--------------|
+attestedapp-host | string  | Host on which the attested app service is deployed.|
+attestedapp-port | int     | Port where attested app listens for incoming connections.|
+sqvs_url         | string  | SQVS URL.|
+
 
 - Run `make all` to build the project.
 
@@ -98,18 +85,6 @@ The different between HeapMinSize and HeapMaxSize is the heap memory. This is ad
 
 --------------------------------------------------------------------------------
 
-Sample configuration (config.yml)
-
---------------------------------------------------------------------------------
-
-Name               | Type    | Description                                                                                                                                                                                                                                                     | Required Default Value
------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------
-attestedapp-host | string  | Host on which the attested app service is deployed                                                                                                                                                                                                                | No                     | 127.0.0.1
-attestedapp-port | int     | Listener Port for the attested app service                                                                                                                                                                                                                        | No                     | 9999
-sqvs_url | string     | Listener Port for the tenant app service                                                                                                                                                                                                                        | No                     | 9999
-
---------------------------------------------------------------------------------
-
 ## 3\. Running the Sample Code
 
 --------------------------------------------------------------------------------
@@ -118,17 +93,7 @@ sqvs_url | string     | Listener Port for the tenant app service                
 
 - Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
 - Update /etc/sgx_default_qcnl.conf with SCS IP and port.
-- Set SQVS_INCLUDE_TOKEN=false in SQVS config.yaml and restart SQVS.
-
-#### Updating configuration files
-
-- Update the configuration file at {source folder}/config.yml.tmpl
-
-```yaml
-attestedapp-host: 127.0.0.1
-attestedapp-port: 9999
-sqvs-url: https://<sqvs>:<port>/svs/v1
-```
+- Set includetoken=false in SQVS config.yaml and restart SQVS.
 
 #### Updating attesting App's policy file
 
@@ -144,7 +109,7 @@ CPU_SVN:
 
 ```bash
 cd {source folder}
-sgx_sign dump -enclave ./attestedApp/lib/enclave.signed.so -dumpfile info.txt
+sgx_sign dump -enclave ./attestedApp/libenclave/enclave.signed.so -dumpfile info.txt
 ```
 
 - In info.txt, search for "mrsigner->value" and add this to "MRSigner:" in /etc/sgx-app-verifier/sgx-quote-policy.txt.
@@ -188,13 +153,14 @@ sgx-attesting-app      | verifier           | Go            | No                
 sgx-attested-app | Attested App Service | Go            | Yes                     | Yes
 libenclave      | SGX Enclave Workload           | C/C++            | Yes                      | Yes
 
-### Secret Provisioning Workflow:
+### Quote Verification and Secret Provisioning Workflow:
 
 1. The attestingApp will transmit a CONNECT message to the attestedApp service over a TCP socket.
-2. The attestedApp service, parses the CONNECT request and fetches the quote from the SGX workload running inside the SGX enclave. "The extended quote" is sent back in the response - containing the quote and the enclave's public key.
+2. The attestedApp service, parses the CONNECT request and fetches the enclave's SGX quote. "The extended quote" is sent back in the response - containing the quote and the enclave's public key.
 3. The attestingApp parses the response, extracts the quote and verifies it with SQVS and compares a subset of the fields extracted from the quote against those in a hardcoded quote policy file.
 4. The enclave's public key is extracted out of the extended quote, and a symmetric secret wrapping key (SWK) is generated and wrapped using the enclave public key.
-5. This wrapped SWK is sent to the attestedApp, which inturn passes it to the SGX enclave app.
-6. The enclave then extracts the SWK out of the payload and responds if it is able to do so. This response is transmitted back to the attestingApp.
-7. The attestingApp then sends the secret payload wrapped using the SWK to the attestedApp service.
-8. The attestedApp service passes it on to SGX workload inside the enclave. If the secret is unwrapped using the SWK inside the enclave, then the success response is sent back to the attestingApp.
+5. The attestingApp ensures that the public key has been generated in the enclave by comparing its hash to the hash included in the quote.
+6. The wrapped SWK is sent to the attestedApp, which inturn passes it to the SGX enclave.
+7. The enclave then extracts the SWK out of the payload and responds if it is able to do so. This response is transmitted back to the attestingApp.
+8. The attestingApp then sends the secret payload wrapped using the SWK to the attestedApp service.
+9. The attestedApp service passes it on to SGX workload inside the enclave. If the secret is unwrapped using the SWK inside the enclave, then the success response is sent back to the attestingApp.

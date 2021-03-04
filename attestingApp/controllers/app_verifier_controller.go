@@ -190,7 +190,7 @@ func (ca AppVerifierController) ConnectAndReceiveQuote(conn net.Conn) (bool, *co
 }
 
 func (ca AppVerifierController) VerifySGXQuote(sgxQuote []byte, enclavePublicKey []byte) bool {
-	err := ca.verifySgxQuote(sgxQuote, enclavePublicKey)
+	err := ca.verifyQuote(sgxQuote, enclavePublicKey)
 	if err != nil {
 		log.WithError(err).Errorf("Error while verifying SGX quote")
 		return false
@@ -200,7 +200,7 @@ func (ca AppVerifierController) VerifySGXQuote(sgxQuote []byte, enclavePublicKey
 }
 
 // verifySgxQuote verifies the quote
-func (ca AppVerifierController) verifySgxQuote(quote []byte, publicKey []byte) error {
+func (ca AppVerifierController) verifyQuote(quote []byte, publicKey []byte) error {
 	var err error
 
 	// Convert byte array to string.
