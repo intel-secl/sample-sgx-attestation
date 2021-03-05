@@ -31,6 +31,8 @@ for Linux* OS - Installation guide](https://download.01.org/intel-sgx/latest/lin
 
 - Download CA Certificate from CMS
 
+Note : If the deployment is CSP and Enterprise model, use the Enterprise CMS.
+
 ```bash
  cd <source folder>
  curl --insecure --location --request GET 'https://<cms.server:port>/cms/v1/ca-certificates' --header 'Accept: application/x-pem-file' > rootca.pem

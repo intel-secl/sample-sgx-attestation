@@ -8,7 +8,6 @@ import (
 	"github.com/intel-secl/sample-sgx-attestation/v3/attestingApp/controllers"
 	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"strconv"
 	"strings"
@@ -37,10 +36,10 @@ func (a *App) startVerifier() error {
 	if err != nil {
 		return err
 	}
+	log.Info("Connected to AttestedApp.")
 
 	// Send a connect message and receive SGX Quote + Public key
 	status, respMsg := verifyController.ConnectAndReceiveQuote(conn)
-	log.Info("Connection Status : ", status)
 	log.Info("Received public key and SGX quote from AttestedApp.")
 
 	// Verify SGX Quote

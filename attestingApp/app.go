@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"os"
 )
 

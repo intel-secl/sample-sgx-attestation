@@ -11,12 +11,12 @@ import (
 )
 
 const helpStr = `Usage:
-	sgx-app-verifier <command> [arguments]
+	sgx-attesting-app <command> [arguments]
 	
 Available Commands:
 	help|-h|--help              Show this help message
-	version|-v|--version        Show the version of current sgx-app-verifier build
-	run                         Run sgx-app-verifier workflow
+	version|-v|--version        Show the version of current sgx-attesting-app build
+	run                         Run sgx-attesting-app workflow
 
 `
 

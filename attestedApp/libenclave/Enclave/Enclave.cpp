@@ -252,7 +252,7 @@ sgx_status_t provision_pubkey_wrapped_swk(uint8_t* wrappedSWK, uint32_t wrappedS
 
     swk_received = true;
 
-    ocall_print_info_string("Sucessfully decrypted SWK.");
+    ocall_print_info_string("Successfully decrypted SWK.");
     
     return SGX_SUCCESS;
 }

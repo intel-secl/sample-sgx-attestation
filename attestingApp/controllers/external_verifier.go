@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	cos "intel/isecl/lib/common/v3/os"
 	"io/ioutil"
 	"net/http"
@@ -51,13 +50,13 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 	buffer := new(bytes.Buffer)
 	err := json.NewEncoder(buffer).Encode(quoteData)
 	if err != nil {
-		return QuoteVerifyAttributes{}, errors.Wrap(err, "controllers/external_verifier:VerifyQuote() Error in encoding the quote.")
+		return QuoteVerifyAttributes{}, errors.Wrap(err, "Error in encoding the quote.")
 	}
 
 	// Send request to external SQVS
 	req, err := http.NewRequest("POST", url, buffer)
 	if err != nil {
-		return QuoteVerifyAttributes{}, errors.Wrap(err, "controllers/external_verifier:VerifyQuote() Error in Creating request.")
+		return QuoteVerifyAttributes{}, errors.Wrap(err, "Error in Creating request.")
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
@@ -103,19 +102,19 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 
 	if err != nil {
 		log.Error(err)
-		return QuoteVerifyAttributes{}, errors.Wrap(err, "controllers/external_verifier:VerifyQuote() Error in sending quote verification request.")
+		return QuoteVerifyAttributes{}, errors.Wrap(err, "Error in sending quote verification request.")
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		log.Error("Status Code : ", resp.StatusCode)
-		return QuoteVerifyAttributes{}, errors.New("controllers/external_verifier:VerifyQuote() Quote Verification failed.")
+		return QuoteVerifyAttributes{}, errors.New("Quote Verification failed.")
 	}
 
 	log.Info("SQVS Response Status:", resp.Status)
 
 	response, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithError(err).Error("controllers/external_verifier:VerifyQuote() Could not read Quote Verification Response body.")
+		log.WithError(err).Error("Could not read Quote Verification Response body.")
 		return QuoteVerifyAttributes{}, err
 	}
 
@@ -125,9 +124,9 @@ func (ev ExternalVerifier) VerifyQuote(quote string, key string) (QuoteVerifyAtt
 	var responseAttributes QuoteVerifyAttributes
 	err = json.Unmarshal(response, &responseAttributes)
 	if err != nil {
-		return QuoteVerifyAttributes{}, errors.Wrap(err, "controllers/external_verifier:VerifyQuote() Error in unmarshalling response.")
+		return QuoteVerifyAttributes{}, errors.Wrap(err, "Error in unmarshalling response.")
 	}
-	log.Info("controllers/external_verifier:VerifyQuote() Successfully verified quote.")
+	log.Info("Successfully verified quote.")
 
 	return responseAttributes, nil
 }

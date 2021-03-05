@@ -18,13 +18,26 @@ import (
 	"fmt"
 	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	logger "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net"
 	"strings"
 	"unsafe"
 )
+
+// TODO : Consolidate loggers.
+var log = logger.New()
+
+type customFormatter struct {
+	logger.TextFormatter
+}
+
+func (f *customFormatter) Format(entry *logger.Entry) ([]byte, error) {
+	_, e := f.TextFormatter.Format(entry)
+	customLog := "AttestingApp(Golang) : " + entry.Message + "\n"
+	return []byte(customLog), e
+}
 
 type resourceError struct {
 	StatusCode int
@@ -88,7 +101,7 @@ func (ca AppVerifierController) GenerateSWK() ([]byte, error) {
 	keyBytes := make([]byte, common.SWKSize)
 	_, err := rand.Read(keyBytes)
 	if err != nil {
-		return nil, errors.Wrap(err, "session/session_management:SessionCreateSwk() Failed to read the key bytes")
+		return nil, errors.Wrap(err, "Failed to read the key bytes")
 	}
 
 	return keyBytes, nil
@@ -203,6 +216,11 @@ func (ca AppVerifierController) VerifySGXQuote(sgxQuote []byte, enclavePublicKey
 func (ca AppVerifierController) verifyQuote(quote []byte, publicKey []byte) error {
 	var err error
 
+	// Initialize logger.
+	Formatter := new(customFormatter)
+	Formatter.DisableTimestamp = true
+	log.SetFormatter(Formatter)
+
 	// Convert byte array to string.
 	qData := base64.StdEncoding.EncodeToString(quote)
 	key := base64.StdEncoding.EncodeToString(publicKey)
@@ -214,7 +232,7 @@ func (ca AppVerifierController) verifyQuote(quote []byte, publicKey []byte) erro
 		return errors.Wrap(err, "Error in quote verification!")
 	}
 
-	log.Printf(" Verifying against quote policy stored at %s", ca.SgxQuotePolicyPath)
+	log.Printf("Verifying against quote policy stored at %s", ca.SgxQuotePolicyPath)
 
 	// Load quote policy from path
 	qpRaw, err := ioutil.ReadFile(ca.SgxQuotePolicyPath)
@@ -246,23 +264,36 @@ func (ca AppVerifierController) verifyQuote(quote []byte, publicKey []byte) erro
 		mreValue, mrSignerValue, cpusvnValue)
 
 	if responseAttributes.EnclaveIssuer != mrSignerValue {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.MRSignerField)
+		log.Errorf("Quote policy mismatch in %s", common.MRSignerField)
+		err = errors.Errorf("Quote policy mismatch in %s", common.MRSignerField)
 		return err
+	} else {
+		log.Infof("%s matched with Quote Policy", common.MRSignerField)
 	}
 
 	if responseAttributes.ConfigSvn != cpusvnValue {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.CpuSvnField)
+		log.Errorf("Quote policy mismatch in %s", common.CpuSvnField)
+		err = errors.Errorf("Quote policy mismatch in %s", common.CpuSvnField)
 		return err
+	} else {
+		log.Infof("%s matched with Quote Policy", common.CpuSvnField)
 	}
 
 	if responseAttributes.EnclaveMeasurement != mreValue {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.MREnclaveField)
+		log.Errorf("Quote policy mismatch in %s", common.MREnclaveField)
+		err = errors.Errorf("Quote policy mismatch in %s", common.MREnclaveField)
 		return err
+	} else {
+		log.Infof("%s matched with Quote Policy", common.MREnclaveField)
 	}
 
 	if responseAttributes.UserDataMatch != "true" {
-		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Public key hash value does not match!")
+		log.Errorf("UserData (public key hash) did not match!")
+		err = errors.Errorf("UserData (public key hash) did not match!")
 		return err
+	} else {
+		log.Infof("User Data (public key hash) matched.")
 	}
+
 	return nil
 }

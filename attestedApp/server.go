@@ -13,7 +13,6 @@ import (
 	"encoding/gob"
 	"github.com/intel-secl/sample-sgx-attestation/v3/common"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"os/signal"
@@ -139,6 +138,7 @@ func (a *App) receivePubkeyWrappedSWK(connection net.Conn) error {
 
 func (a *App) receiveSWKWrappedSecret(connection net.Conn) error {
 	log.Info("Receiving SWK wrapped Secret message...")
+
 	gobWrappedSecretDecoder := gob.NewDecoder(connection)
 	wrappedSecretMsg := new(common.Message)
 
@@ -205,7 +205,7 @@ func (a *App) handleConnection(connection net.Conn) error {
 	}
 
 	// Step 4 - Receive SWK wrapped secret
-	a.receiveSWKWrappedSecret(connection)
+	err = a.receiveSWKWrappedSecret(connection)
 	if err != nil {
 		log.Error("server:handleConnection : ", err)
 		return err

@@ -96,13 +96,13 @@ uint8_t* sc_encrypt_swk (uint8_t *raw_key, uint8_t *swk, int swkSize, int *encry
     RSA_set0_key (evp_rsa_key, modulus, exponent, NULL);
     EVP_PKEY_assign_RSA(evp_pub_key, evp_rsa_key);
 
-    printf ("Encrypt.c : Size of unencrypted SWK : %d\n", swkSize);
+    printf ("libencrypt(C) : Size of unencrypted SWK : %d\n", swkSize);
 
     size_t encrypted_swk_len;
     // Run it once with out output buffer to calculate its length
     status = pub_encrypt_sha256(evp_pub_key, NULL, &encrypted_swk_len, swk, (size_t)swkSize);
     if ( status != 0) {
-      printf("Encrypt.c : ERROR : Output buffer calculation failed : %d\n", status);
+      printf("libencrypt(C) : Output buffer calculation failed : %d\n", status);
       return NULL;
     }
     
@@ -110,12 +110,12 @@ uint8_t* sc_encrypt_swk (uint8_t *raw_key, uint8_t *swk, int swkSize, int *encry
 
     status = pub_encrypt_sha256(evp_pub_key, encrypted_swk, &encrypted_swk_len, swk, (size_t)swkSize);
     if ( status != 0) {
-      printf("Encrypt.c : ERROR : Encryption failed : %d\n", status);
+      printf("libencrypt(C) : Encryption failed : %d\n", status);
       return NULL;
     }
 
     *encrypted_len = encrypted_swk_len;
-    printf("Encrypt.c : Encryption sucessfull.\n");
+    printf("libencrypt(C) : Encryption successful.\n");
 
     return encrypted_swk;
 }

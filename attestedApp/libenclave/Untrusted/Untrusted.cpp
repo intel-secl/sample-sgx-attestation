@@ -159,8 +159,8 @@ void print_error_message(sgx_status_t ret)
     for (idx = 0; idx < ttl; idx++) {
         if(ret == sgx_errlist[idx].err) {
             if(NULL != sgx_errlist[idx].sug)
-                printf("INFO : %s\n", sgx_errlist[idx].sug);
-            printf("ERROR : %s\n", sgx_errlist[idx].msg);
+                printf("%s\n", sgx_errlist[idx].sug);
+            printf("%s\n", sgx_errlist[idx].msg);
             break;
         }
     }
@@ -178,10 +178,10 @@ int initialize_enclave(void)
     
     /* Call sgx_create_enclave to initialize an enclave instance */
     /* Debug Support: set 2nd parameter to 1 */
-    cout << "INFO : Untrusted - Enclave path : " << ENCLAVE_FILENAME << "\t" << endl;
-    cout << "INFO : Untrusted - SGX_DEBUG_FLAG : " <<SGX_DEBUG_FLAG << endl;
+    cout << "libenclave/Untrusted(C/C++) : Enclave path : " << ENCLAVE_FILENAME << endl;
+    cout << "libenclave/Untrusted(C/C++) : SGX_DEBUG_FLAG : " <<SGX_DEBUG_FLAG << endl;
 
-    cout << "INFO : Untrusted - Creating enclave ..." <<endl;
+    cout << "libenclave/Untrusted(C/C++) : Loading enclave..." <<endl;
     ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, NULL, NULL, &global_eid, NULL);
 
     if (ret != SGX_SUCCESS) {
@@ -189,13 +189,13 @@ int initialize_enclave(void)
         return -1;
     }
 
-    cout << "INFO : Untrusted - Enclave created." <<endl;
+    cout << "libenclave/Untrusted(C/C++) : Enclave loaded." <<endl;
 
     return 0;
 }
 
 int destroy_Enclave() {
-    cout << "INFO : Untrusted - Destroying enclave..." <<endl;
+    cout << "libenclave/Untrusted(C/C++) : Destroying enclave..." <<endl;
 
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
@@ -209,7 +209,7 @@ void ocall_print_info_string(const char *str)
     /* Proxy/Bridge will check the length and null-terminate 
      * the input string to prevent buffer overflow. 
      */
-    printf("INFO : Inside Enclave : %s\n", str);
+    printf("libenclave/Trusted(C/C++) : %s\n", str);
 }
 
 void ocall_print_error_string(const char *str)
@@ -217,12 +217,12 @@ void ocall_print_error_string(const char *str)
     /* Proxy/Bridge will check the length and null-terminate 
      * the input string to prevent buffer overflow. 
      */
-    printf("ERROR : Inside Enclave : %s\n", str);
+    printf("libenclave/Trusted(C/C++) : %s\n", str);
 }
 
 int get_Key()
 {
-    printf("INFO : Untrusted - Fetching public key...\n");
+    printf("libenclave/Untrusted(C/C++) : Fetching public key...\n");
 
     size_t count;
     
@@ -236,7 +236,7 @@ int get_Key()
     return 0;
 }
 int unwrap_secret(uint8_t* wrapped_secret, size_t wrapped_secret_size) {
-    printf ("INFO : Untrusted - unwrap_secret: Wrapped Secret Size is: %d\n", wrapped_secret_size);
+    printf ("libenclave/Untrusted(C/C++) : Passing Wrapped Secret of Size %d to trusted.\n", wrapped_secret_size);
     sgx_status_t status = SGX_SUCCESS;
 
     status = provision_swk_wrapped_secret(global_eid, &status,
@@ -251,7 +251,7 @@ int unwrap_secret(uint8_t* wrapped_secret, size_t wrapped_secret_size) {
         return -1;
     }
 
-    printf ("INFO : Untrusted - unwrap_secret: Sucessfully unwrapped the secret.\n");
+    printf ("libenclave/Untrusted(C/C++) : Successfully unwrapped the secret.\n");
     return 0;
 }
 
@@ -259,19 +259,19 @@ int unwrap_SWK(uint8_t* wrappedSWK, size_t wrappedSWKsize) {
 
     sgx_status_t status = SGX_SUCCESS;
 
-    cout << "INFO : Untrusted - Passing wrapped SWK to enclave...\n";
+    cout << "libenclave/Untrusted(C/C++) : Passing wrapped SWK to enclave...\n";
     sgx_status_t ret = provision_pubkey_wrapped_swk(global_eid, &status,
                                                     wrappedSWK, wrappedSWKsize);
 
     if (status != SGX_SUCCESS) {
-        printf("ERROR : Untrusted - Failed to get unwrapped SWK - status: ");
+        printf("Untrusted - Failed to get unwrapped SWK - status: ");
         print_error_message (status);
         printf("\n");
         return status;
     }
 
     if (ret != SGX_SUCCESS) {
-        printf("ERROR : Untrusted - Failed to get unwrapped SWK - ret: ");
+        printf("Untrusted - Failed to get unwrapped SWK - ret: ");
         print_error_message (ret);
         printf("\n");
         return ret;
@@ -315,7 +315,7 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
         sgx_ql_certification_data_t *p_cert_data;
         FILE *fptr = NULL;
 
-        cout << "INFO : Untrusted - ECALL : get public key..." << endl;
+        cout << "libenclave/Untrusted(C/C++) : ECALL : get public key..." << endl;
         ret = get_Key();
 
         const char* exponent = (const char *)g_rsa_key1.e;
@@ -326,54 +326,54 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
         memcpy(key_buffer+REF_E_SIZE_IN_BYTES, modulus, REF_N_SIZE_IN_BYTES);
 
         if (ret != 0) {
-            cout << "ERROR : Untrusted -  Error in getting public key" <<endl;
+            cout << "libenclave/Untrusted(C/C++) :  Error in getting public key" <<endl;
             ret = -1;
         }
 
         qe3_ret = sgx_qe_set_enclave_load_policy(SGX_QL_PERSISTENT);
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("ERROR : Untrusted - Error in set enclave load policy: 0x%04x\n", qe3_ret);
+            printf("libenclave/Untrusted(C/C++) : Error in set enclave load policy: 0x%04x\n", qe3_ret);
             ret = -1;
         }
 
         qe3_ret = sgx_ql_set_path(SGX_QL_PCE_PATH, "/usr/lib64/libsgx_pce.signed.so");
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("ERROR : Untrusted - Error in set PCE directory: 0x%04x.\n", qe3_ret);
+            printf("libenclave/Untrusted(C/C++) : Error in set PCE directory: 0x%04x.\n", qe3_ret);
             ret = -1;
         }
         qe3_ret = sgx_ql_set_path(SGX_QL_QE3_PATH, "/usr/lib64/libsgx_qe3.signed.so");
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("ERROR : Untrusted - Error in set QE3 directory: 0x%04x.\n", qe3_ret);
+            printf("libenclave/Untrusted(C/C++) : Error in set QE3 directory: 0x%04x.\n", qe3_ret);
             ret = -1;
         }
         qe3_ret = sgx_ql_set_path(SGX_QL_QPL_PATH, "/usr/lib64/libdcap_quoteprov.so.1");
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("ERROR : Untrusted - /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 not found.\n");
+            printf("libenclave/Untrusted(C/C++) : /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 not found.\n");
         }
-        printf("INFO : Untrusted - Fetching target info...\n");
+        printf("libenclave/Untrusted(C/C++) : Fetching target info...\n");
         qe3_ret = sgx_qe_get_target_info(&qe_target_info);
         if (SGX_QL_SUCCESS != qe3_ret) {
             printf("Error in sgx_qe_get_target_info. 0x%04x\n", qe3_ret);
             ret = -1;
         }
-        printf("INFO : Untrusted - Fetching SQX quote size..\n");
+        printf("libenclave/Untrusted(C/C++) : Fetching SGX quote size..\n");
         qe3_ret = sgx_qe_get_quote_size(&quote_size);
         if (SGX_QL_SUCCESS != qe3_ret) {
             printf("Error in sgx_qe_get_quote_size. 0x%04x\n", qe3_ret);
             ret = -1;
         }
-        printf("INFO : Untrusted - Quote size is %d bytes.\n", quote_size);
+        printf("libenclave/Untrusted(C/C++) : Quote size is %d bytes.\n", quote_size);
 
         p_quote_buffer = (uint8_t*)malloc(quote_size);
         if (NULL == p_quote_buffer) {
-            printf("ERROR : Couldn't allocate quote_buffer\n");
+            printf("libenclave/Untrusted(C/C++) : Couldn't allocate quote_buffer\n");
             ret = -1;
         }
         memset(p_quote_buffer, 0, quote_size);
 
         sgx_status_t value;
 
-        printf("INFO : Untrusted - ECALL - fetching enclave report...\n");
+        printf("libenclave/Untrusted(C/C++) : ECALL - Fetching enclave report...\n");
         status = enclave_create_report(global_eid,
                                        &retval,
                                        &qe_target_info,
@@ -381,18 +381,18 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
                                        &app_report);
 
         if ((SGX_SUCCESS != status) || (0 != retval)) {
-            printf("ERROR : Untrusted - Report creation failed.\n");
+            printf("libenclave/Untrusted(C/C++) : Report creation failed.\n");
             ret = false;
         }
 
         // Get the Quote
-        printf("INFO : Untrusted : Fetching quote..\n");
+        printf("libenclave/Untrusted(C/C++) : Fetching quote using SGX Caching Service (SCS)...\n");
         qe3_ret = sgx_qe_get_quote(&app_report,
                                    quote_size,
                                    p_quote_buffer);
 
         if (SGX_QL_SUCCESS != qe3_ret) {
-            printf( "ERROR : Untrusted - Error in sgx_qe_get_quote. 0x%04x\n", qe3_ret);
+            printf( "libenclave/Untrusted(C/C++) : Error in sgx_qe_get_quote. 0x%04x\n", qe3_ret);
             ret = -1;
         }
 
@@ -406,7 +406,7 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
         cert_information = (uint32_t*)malloc(certSize);
 
         if (NULL == cert_information) {
-            printf("ERROR : Untrusted - Couldn't allocate cert_information buffer!\n");
+            printf("libenclave/Untrusted(C/C++) : Couldn't allocate cert_information buffer!\n");
             ret = -1;
         }
 
@@ -415,11 +415,11 @@ uint8_t* get_SGX_Quote(int* qSize, int* kSize) {
 
         qe3_ret = sgx_qe_cleanup_by_policy();
         if(SGX_QL_SUCCESS != qe3_ret) {
-            printf("ERROR : Untrusted - Error in cleanup enclave load policy: 0x%04x\n", qe3_ret);
+            printf("libenclave/Untrusted(C/C++) : Error in cleanup enclave load policy: 0x%04x\n", qe3_ret);
             ret = -1;
         }
 
-        printf("INFO : Untrusted - SGX Quote retrived successfully.\n");
+        printf("libenclave/Untrusted(C/C++) : SGX Quote retrived successfully.\n");
 
         *qSize = quote_size;
         *kSize = REF_N_SIZE_IN_BYTES + REF_E_SIZE_IN_BYTES;
@@ -441,7 +441,7 @@ int SGX_CDECL init()
     if(initialize_enclave() < 0){
         return -1; 
     }
-    cout << "INFO : Untrusted - Enclave  id : " << global_eid <<endl;
+    cout << "libenclave/Untrusted(C/C++) : Enclave  id : " << global_eid <<endl;
 
     return 0;
 }

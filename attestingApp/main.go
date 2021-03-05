@@ -6,13 +6,30 @@ package main
 
 import (
 	"fmt"
+	logger "github.com/sirupsen/logrus"
 	"os"
 )
+
+var log = logger.New()
+
+type customFormatter struct {
+	logger.TextFormatter
+}
+
+func (f *customFormatter) Format(entry *logger.Entry) ([]byte, error) {
+	_, e := f.TextFormatter.Format(entry)
+	customLog := "AttestingApp(Golang) : " + entry.Message + "\n"
+	return []byte(customLog), e
+}
 
 func main() {
 	var app *App
 
 	app = &App{}
+
+	Formatter := new(customFormatter)
+	Formatter.DisableTimestamp = true
+	log.SetFormatter(Formatter)
 
 	err := app.Run(os.Args)
 	if err != nil {
