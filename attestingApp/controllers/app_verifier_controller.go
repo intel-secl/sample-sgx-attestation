@@ -5,8 +5,7 @@
 package controllers
 
 // #cgo CFLAGS: -I /opt/intel/sgxsdk/include -I /usr/lib/
-// #cgo LDFLAGS: -L/usr/lib64/ -lencrypt -luntrusted -lssl -lcrypto
-// #include "../../attestedApp/libenclave/Untrusted/Untrusted.h"
+// #cgo LDFLAGS: -L/usr/lib64/ -lencrypt -lssl -lcrypto
 // #include "../lib/encrypt.h"
 import "C"
 
