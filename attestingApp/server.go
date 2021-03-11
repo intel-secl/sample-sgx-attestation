@@ -12,6 +12,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (a *App) startVerifier() error {
@@ -66,6 +67,11 @@ func (a *App) startVerifier() error {
 	}
 
 	log.Info("SWK Shared.")
+
+	// We wait before sending the next message so that
+	// the enclave has time to unwrap the SWK before it
+	// can receive the secret.
+	time.Sleep(1 * time.Second)
 
 	// Share secret with the Attested App
 	log.Info("Sharing secret ...")

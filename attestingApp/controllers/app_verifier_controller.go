@@ -256,9 +256,8 @@ func (ca AppVerifierController) verifySgxQuote(quote []byte, publicKey []byte) e
 	}
 
 	if responseAttributes.EnclaveMeasurement != mreValue {
-		//FIXME : Uncomment before MR
-		// err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.MREnclaveField)
-		// return err
+		err = errors.Errorf("controllers/app_verifier_controller:verifySgxQuote() Quote policy mismatch in %s", common.MREnclaveField)
+		return err
 	}
 
 	if responseAttributes.UserDataMatch != "true" {
