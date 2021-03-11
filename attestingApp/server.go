@@ -33,7 +33,7 @@ func (a *App) startVerifier() error {
 	}
 
 	// Connect to the Attested App
-	conn, err := net.Dial(common.ProtocolTcp, strings.Join([]string{common.DefaultAttestedAppHost, strconv.Itoa(common.DefaultAttestedAppPort)}, ":"))
+	conn, err := net.Dial(common.ProtocolTcp, strings.Join([]string{c.AttestedAppServiceHost, strconv.Itoa(c.AttestedAppServicePort)}, ":"))
 	if err != nil {
 		return err
 	}

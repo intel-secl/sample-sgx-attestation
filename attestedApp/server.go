@@ -262,8 +262,8 @@ func (a *App) startServer() error {
 
 	log.Info("Starting Attested App ...")
 
-	// check if socket can be opened up
-	listenAddr := c.AttestedAppServiceHost + ":" + strconv.Itoa(c.AttestedAppServicePort)
+	// AttestedApp would always bind to localhost. Port can be configured.
+	listenAddr := common.DefaultAttestedAppHost + ":" + strconv.Itoa(c.AttestedAppServicePort)
 	log.Infof("Attested App socket binding to %s", listenAddr)
 	listener, err := net.Listen(common.ProtocolTcp, listenAddr)
 	if err != nil {
