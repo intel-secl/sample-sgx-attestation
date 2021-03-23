@@ -1,10 +1,10 @@
 # SGX Attestation Sample Code
 
-The project demonstrates several fundamental usages of Intel(R) Software Guard Extensions (Intel(R) SGX) SDK:
+The project demonstrates several fundamental usages of Intel® Software Guard Extensions (Intel® SGX) SDK:
 
 - Initializing and destroying a SGX enclave hosted in an attestedApp.
 - Generate a signed SGX Report and public/private key pair inside the enclave. Add the hash of public key in the signed report.
-- Generate a quote using SCS with Intel DCAP APIs.
+- Generate a quote using SCS with Intel® DCAP APIs.
 - Verify the SGX quote using SGX Quote Verification Service (SQVS) by a separate attestingApp
 - Verify that the quote complies with a user-defined quote policy by the attestingApp.
 - Generate a Symmetric Wrapping Key (SWK) in the attestingApp, wrap it with enclave's public key and share it with the enclave.
@@ -20,14 +20,14 @@ The project demonstrates several fundamental usages of Intel(R) Software Guard E
 
 - RHEL 8.2
 - GoLang v1.13 or greater
-- Intel(R) SGX SDK for Linux
+- Intel® SGX SDK for Linux
 - gcc toolchain
 - make
 
 - Running instance of CMS, SCS and SQVS.
 - Install SGX Agent on the host.
-- Install Intel(R) SGX SDK for Linux*OS . Refer [Intel® Software Guard Extensions (Intel® SGX) SDK
-for Linux* OS - Installation guide](https://download.01.org/intel-sgx/latest/linux-latest/docs/)
+- Install Intel® SGX SDK for Linux*OS . Refer [Intel® Software Guard Extensions (Intel® SGX) SDK
+for Linux* OS - Installation guide](https://download.01.org/intel-sgx/latest/linux-latest/docs/) . Please install the *-devel for Intel® SGX PSW packages as mentioned in the installation guide.
 
 - Download CA Certificate from CMS
 
