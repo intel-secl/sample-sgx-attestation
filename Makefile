@@ -29,7 +29,7 @@ attestedapp-installer: attestedapp
 	cp attestedApp/libenclave/enclave.signed.so out/enclave.signed.so
 
 test:
-	GOPRIVATE=gitlab.devtools.intel.com/* go test ./... -coverprofile cover.out
+	GOOS=linux GOSUMDB=off GOPROXY=direct go test ./... -coverprofile cover.out
 	go tool cover -func cover.out
 	go tool cover -html=cover.out -o cover.html
 
