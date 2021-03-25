@@ -94,8 +94,10 @@ The different between HeapMinSize and HeapMaxSize is the heap memory. This is ad
 ### Pre-requisites
 
 - Make sure your environment is set: $ source ${sgx-sdk-install-path}/environment
-- Update /etc/sgx_default_qcnl.conf with SCS IP and port.
-- Set includetoken=false in SQVS config.yaml and restart SQVS.
+- Update /etc/sgx_default_qcnl.conf 
+  - Set PCCS_URL with SCS IP and Port. E.g `PCCS_URL=https://<SCS_IP/Host>:9000/scs/sgx/certification/v1`
+  - Set `USE_SECURE_CERT=FALSE`
+- Set `includetoken=false` in SQVS config.yaml and restart SQVS.
 
 #### Updating attesting App's policy file
 
